@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button onclick="testCities()">Test Cities API</button>
+    <pre id="output"></pre>
+
+    <script type="module">
+        import { api } from './js/api.js';
+        
+        window.testCities = async function() {
+            const output = document.getElementById('output');
+            output.textContent = 'Loading...\n';
+            
+            try {
+                // Check auth
+                const token = localStorage.getItem('auth_token');
+                output.textContent += 'Token: ' + (token ? 'EXISTS' : 'MISSING') + '\n';
+                
+                // Try API call
+                const response = await fetch('http://localhost:8000/admin/sessions/cities', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                output.textContent += 'Status: ' + response.status + '\n';
+                
+                const data = await response.json();
+                output.textContent += 'Response: ' + JSON.stringify(data, null, 2);
+                
+            } catch (error) {
+                output.textContent += 'ERROR: ' + error.message;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Token Check</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .section {
+            background: #2d2d2d;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        h2 {
+            color: #4ec9b0;
+            margin-top: 0;
+        }
+        pre {
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1177bb;
+        }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug - Token & Auth Check</h1>
+
+    <div class="section">
+        <h2>1. LocalStorage Check</h2>
+        <pre id="storage-info">Loading...</pre>
+        <button onclick="checkStorage()">Refresh Storage Info</button>
+        <button onclick="clearStorage()">Clear All Storage</button>
+    </div>
+
+    <div class="section">
+        <h2>2. Login Test</h2>
+        <button onclick="testLogin()">Test Login (Admin Team)</button>
+        <pre id="login-result">Not tested yet</pre>
+    </div>
+
+    <div class="section">
+        <h2>3. Authenticated Request Test</h2>
+        <button onclick="testAuthRequest()">Test /game/status (with token)</button>
+        <pre id="auth-request-result">Not tested yet</pre>
+    </div>
+
+    <div class="section">
+        <h2>4. Admin Request Test</h2>
+        <button onclick="testAdminRequest()">Test /admin/submissions/pending</button>
+        <pre id="admin-request-result">Not tested yet</pre>
+    </div>
+
+    <div class="section">
+        <h2>5. Check Submissions in Database</h2>
+        <button onclick="checkDatabase()">Query Database for Submissions</button>
+        <pre id="db-result">Not tested yet</pre>
+    </div>
+
+    <script>
+        function checkStorage() {
+            const token = localStorage.getItem('auth_token');
+            const user = localStorage.getItem('current_user');
+            
+            let html = '';
+            html += '<strong>auth_token:</strong>\n';
+            if (token) {
+                html += `<span class="success">✓ Present (${token.length} chars)</span>\n`;
+                html += `Value: ${token.substring(0, 50)}...\n\n`;
+            } else {
+                html += '<span class="error">✗ Not found</span>\n\n';
+            }
+            
+            html += '<strong>current_user:</strong>\n';
+            if (user) {
+                html += '<span class="success">✓ Present</span>\n';
+                html += `Value: ${user}\n`;
+            } else {
+                html += '<span class="error">✗ Not found</span>\n';
+            }
+            
+            document.getElementById('storage-info').innerHTML = html;
+        }
+
+        function clearStorage() {
+            localStorage.clear();
+            alert('LocalStorage cleared!');
+            checkStorage();
+        }
+
+        async function testLogin() {
+            const resultEl = document.getElementById('login-result');
+            resultEl.innerHTML = 'Testing login...';
+            
+            try {
+                const response = await fetch('http://localhost:8000/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: 'Admin Team', password: 'password123' })
+                });
+                
+                const data = await response.json();
+                
+                let html = `<strong>Status:</strong> ${response.status} ${response.ok ? '<span class="success">✓</span>' : '<span class="error">✗</span>'}\n`;
+                html += `<strong>Response:</strong>\n${JSON.stringify(data, null, 2)}\n\n`;
+                
+                if (response.ok) {
+                    localStorage.setItem('auth_token', data.access_token);
+                    localStorage.setItem('current_user', JSON.stringify({
+                        id: data.team_id,
+                        name: data.team_name,
+                        is_admin: data.is_admin
+                    }));
+                    html += '<span class="success">✓ Token saved to localStorage</span>';
+                    checkStorage();
+                }
+                
+                resultEl.innerHTML = html;
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testAuthRequest() {
+            const resultEl = document.getElementById('auth-request-result');
+            resultEl.innerHTML = 'Testing authenticated request...';
+            
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                resultEl.innerHTML = '<span class="error">No token found! Login first.</span>';
+                return;
+            }
+            
+            try {
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
+                
+                let html = `<strong>Request Headers:</strong>\n${JSON.stringify(headers, null, 2)}\n\n`;
+                
+                const response = await fetch('http://localhost:8000/game/status', {
+                    method: 'GET',
+                    headers: headers
+                });
+                
+                const data = await response.json();
+                
+                html += `<strong>Status:</strong> ${response.status} ${response.ok ? '<span class="success">✓</span>' : '<span class="error">✗</span>'}\n`;
+                html += `<strong>Response:</strong>\n${JSON.stringify(data, null, 2)}`;
+                
+                resultEl.innerHTML = html;
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testAdminRequest() {
+            const resultEl = document.getElementById('admin-request-result');
+            resultEl.innerHTML = 'Testing admin request...';
+            
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                resultEl.innerHTML = '<span class="error">No token found! Login first.</span>';
+                return;
+            }
+            
+            try {
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
+                
+                let html = `<strong>Request Headers:</strong>\n${JSON.stringify(headers, null, 2)}\n\n`;
+                
+                const response = await fetch('http://localhost:8000/admin/submissions/pending', {
+                    method: 'GET',
+                    headers: headers
+                });
+                
+                const data = await response.json();
+                
+                html += `<strong>Status:</strong> ${response.status} ${response.ok ? '<span class="success">✓</span>' : '<span class="error">✗</span>'}\n`;
+                html += `<strong>Response:</strong>\n${JSON.stringify(data, null, 2)}`;
+                
+                resultEl.innerHTML = html;
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function checkDatabase() {
+            const resultEl = document.getElementById('db-result');
+            resultEl.innerHTML = 'Checking database...';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/submissions/mine', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let html = `<strong>Status:</strong> ${response.status}\n`;
+                html += `<strong>Your Submissions:</strong>\n${JSON.stringify(data, null, 2)}`;
+                
+                resultEl.innerHTML = html;
+            } catch (error) {
+                resultEl.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+
+        // Auto-run on load
+        checkStorage();
+    </script>
+</body>
+</html>

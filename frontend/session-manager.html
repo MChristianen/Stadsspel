@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spelbeheer - Stadsspel Admin</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .section-card {
+            background: white;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .session-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .session-item {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #2196F3;
+        }
+
+        .session-item.active {
+            border-left-color: #4CAF50;
+            background: #e8f5e9;
+        }
+
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .session-info {
+            flex: 1;
+        }
+
+        .session-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .join-code {
+            background: #2196F3;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 20px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 10px 0;
+        }
+
+        .join-link {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+
+        .team-list {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+
+        .team-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-waiting { background: #FF9800; color: white; }
+        .status-active { background: #4CAF50; color: white; }
+        .status-finished { background: #757575; color: white; }
+
+        .btn-copy {
+            background: #757575;
+            cursor: pointer;
+        }
+        .btn-copy:hover {
+            background: #616161;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <div>
+                <h1>🎮 Spelbeheer</h1>
+                <p id="admin-name"></p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" onclick="window.location.href='/admin.html'">
+                    📊 Inzendingen
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='/'">
+                    Terug naar App
+                </button>
+            </div>
+        </div>
+
+        <!-- Create New Session -->
+        <div class="section-card">
+            <h2>Nieuw Spel Aanmaken</h2>
+            <form id="create-session-form">
+                <div class="form-group">
+                    <label for="city-select">Kies Stad/Spel</label>
+                    <select id="city-select" required>
+                        <option value="">Laden...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="duration-input">Speelduur (minuten)</label>
+                    <input type="number" id="duration-input" min="1" value="120" required>
+                </div>
+                <button type="submit" class="btn btn-success">✨ Spel Aanmaken</button>
+            </form>
+        </div>
+
+        <!-- Sessions List -->
+        <div class="section-card">
+            <h2>Actieve en Geplande Spellen</h2>
+            <div id="sessions-list" class="session-list">
+                <p style="text-align: center; color: #757575;">Laden...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inline script to avoid caching issues
+        const API_BASE_URL = 'http://localhost:8000';
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check auth
+            const token = localStorage.getItem('auth_token');
+            const userStr = localStorage.getItem('current_user');
+            
+            console.log('[Init] Token exists:', !!token);
+            console.log('[Init] User:', userStr);
+            
+            if (!token || !userStr) {
+                alert('Niet ingelogd! Redirect naar home...');
+                window.location.href = '/';
+                return;
+            }
+            
+            currentUser = JSON.parse(userStr);
+            
+            if (!currentUser.is_admin) {
+                alert('Alleen admins hebben toegang tot deze pagina');
+                window.location.href = '/';
+                return;
+            }
+            
+            document.getElementById('admin-name').textContent = `Ingelogd als: ${currentUser.name}`;
+            
+            // Load data
+            await loadCities();
+            await loadSessions();
+            
+            setupEventListeners();
+        });
+
+        async function loadCities() {
+            const select = document.getElementById('city-select');
+            
+            try {
+                console.log('[Cities] Loading...');
+                
+                const token = localStorage.getItem('auth_token');
+                const response = await fetch(`${API_BASE_URL}/api/sessions/cities`, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('[Cities] Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+                
+                const cities = await response.json();
+                console.log('[Cities] Loaded:', cities);
+                
+                if (!cities || cities.length === 0) {
+                    select.innerHTML = '<option value="">Geen steden beschikbaar</option>';
+                    return;
+                }
+                
+                select.innerHTML = cities.map(city => 
+                    `<option value="${city.id}">${city.name} (${city.area_count} gebieden)</option>`
+                ).join('');
+                
+                console.log('[Cities] Dropdown updated!');
+                
+            } catch (error) {
+                console.error('[Cities] Error:', error);
+                select.innerHTML = `<option value="">ERROR: ${error.message}</option>`;
+                alert('Fout bij laden steden:\n' + error.message);
+            }
+        }
+
+        async function loadSessions() {
+            try {
+                console.log('[Sessions] Loading...');
+                
+                const token = localStorage.getItem('auth_token');
+                const response = await fetch(`${API_BASE_URL}/api/sessions`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const sessions = await response.json();
+                console.log('[Sessions] Loaded:', sessions);
+                
+                const container = document.getElementById('sessions-list');
+                
+                if (sessions.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #757575;">Nog geen spellen aangemaakt</p>';
+                    return;
+                }
+                
+                let html = '';
+                
+                for (const session of sessions) {
+                    const statusClass = session.is_active ? 'active' : '';
+                    const statusBadge = session.is_finished ? 
+                        '<span class="status-badge status-finished">Afgelopen</span>' :
+                        session.is_active ? 
+                        '<span class="status-badge status-active">Actief</span>' :
+                        '<span class="status-badge status-waiting">Wacht op Start</span>';
+                    
+                    const joinUrl = `${window.location.origin}/join.html?code=${session.join_code}`;
+                    
+                    html += `
+                        <div class="session-item ${statusClass}">
+                            <div class="session-header">
+                                <div class="session-info">
+                                    <h3>${session.city_name} ${statusBadge}</h3>
+                                    <p><strong>Duur:</strong> ${session.duration_minutes} minuten</p>
+                                    <p><strong>Teams:</strong> ${session.team_count}</p>
+                                    ${session.started_at ? `<p><strong>Gestart:</strong> ${new Date(session.started_at).toLocaleString('nl-NL')}</p>` : ''}
+                                </div>
+                                <div class="session-actions">
+                                    ${!session.is_active && !session.is_finished ? 
+                                        `<button class="btn btn-success" onclick="startSession(${session.id})">▶️ Start</button>` : ''}
+                                    ${!session.is_active && !session.is_finished ? 
+                                        `<button class="btn btn-danger" onclick="deleteSession(${session.id})">🗑️</button>` : ''}
+                                </div>
+                            </div>
+                            
+                            <div style="margin: 15px 0;">
+                                <p style="margin-bottom: 5px;"><strong>Join Code:</strong></p>
+                                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                                    <span class="join-code">${session.join_code}</span>
+                                    <button class="btn btn-copy" onclick="copyText('${session.join_code}', event)">📋 Kopieer Code</button>
+                                </div>
+                                
+                                <p style="margin-bottom: 5px;"><strong>Join Link:</strong></p>
+                                <div class="join-link" style="margin-bottom: 10px;">${joinUrl}</div>
+                                <button class="btn btn-copy" onclick="copyText('${joinUrl}', event)">📋 Kopieer Link</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('[Sessions] Error:', error);
+                document.getElementById('sessions-list').innerHTML = 
+                    '<p style="color: red;">Fout bij laden: ' + error.message + '</p>';
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('create-session-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const cityId = parseInt(document.getElementById('city-select').value);
+                const duration = parseInt(document.getElementById('duration-input').value);
+                
+                if (!cityId || !duration) {
+                    alert('Vul alle velden in');
+                    return;
+                }
+                
+                try {
+                    const token = localStorage.getItem('auth_token');
+                    const response = await fetch(`${API_BASE_URL}/api/sessions`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ 
+                            city_id: cityId, 
+                            duration_minutes: duration 
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.detail || 'Failed to create session');
+                    }
+                    
+                    const session = await response.json();
+                    alert(`✅ Spel aangemaakt!\n\nJoin Code: ${session.join_code}\n\nDeel deze code met teams.`);
+                    
+                    // Reset form
+                    document.getElementById('duration-input').value = 120;
+                    
+                    // Reload sessions
+                    await loadSessions();
+                    
+                } catch (error) {
+                    alert('❌ Fout: ' + error.message);
+                }
+            });
+        }
+
+        window.startSession = async function(sessionId) {
+            if (!confirm('Dit spel nu starten? Teams kunnen daarna niet meer deelnemen.')) {
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('auth_token');
+                const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}/start`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to start');
+                }
+                
+                const result = await response.json();
+                alert(`✅ Spel gestart met ${result.team_count} teams!`);
+                await loadSessions();
+                
+            } catch (error) {
+                alert('❌ Fout: ' + error.message);
+            }
+        };
+
+        window.deleteSession = async function(sessionId) {
+            if (!confirm('Dit spel verwijderen?')) {
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('auth_token');
+                const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to delete');
+                }
+                
+                alert('✅ Spel verwijderd');
+                await loadSessions();
+                
+            } catch (error) {
+                alert('❌ Fout: ' + error.message);
+            }
+        };
+
+        window.copyText = function(text, event) {
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const original = btn.textContent;
+                btn.textContent = '✅ Gekopieerd!';
+                btn.style.background = '#4CAF50';
+                setTimeout(() => {
+                    btn.textContent = original;
+                    btn.style.background = '';
+                }, 2000);
+            }).catch(() => alert('Kon niet kopiëren naar klembord'));
+        };
+    </script>
+</body>
+</html>

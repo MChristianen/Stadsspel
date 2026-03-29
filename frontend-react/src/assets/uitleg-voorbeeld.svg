@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="260" viewBox="0 0 900 260" fill="none">
+  <rect width="900" height="260" rx="16" fill="#F8FAFC"/>
+  <rect x="28" y="26" width="266" height="208" rx="14" fill="#E8F1FF"/>
+  <text x="161" y="56" text-anchor="middle" font-family="Segoe UI, Arial" font-size="16" fill="#244A8F">Voorbeeldopdracht</text>
+  <text x="161" y="88" text-anchor="middle" font-family="Segoe UI, Arial" font-size="14" fill="#3A5E9F">Maak een teamfoto</text>
+  <text x="161" y="108" text-anchor="middle" font-family="Segoe UI, Arial" font-size="14" fill="#3A5E9F">bij een landmark</text>
+  <rect x="74" y="132" width="174" height="72" rx="10" fill="#C9DCFF"/>
+  <text x="161" y="160" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#244A8F">Inzending bevat</text>
+  <text x="161" y="180" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#244A8F">foto + korte tekst</text>
+
+  <rect x="318" y="26" width="266" height="208" rx="14" fill="#EAF9F1"/>
+  <text x="451" y="56" text-anchor="middle" font-family="Segoe UI, Arial" font-size="16" fill="#1E6A4D">Beoordeling</text>
+  <text x="451" y="88" text-anchor="middle" font-family="Segoe UI, Arial" font-size="14" fill="#2B7D5D">Admin controleert</text>
+  <text x="451" y="108" text-anchor="middle" font-family="Segoe UI, Arial" font-size="14" fill="#2B7D5D">of opdracht klopt</text>
+  <rect x="364" y="132" width="174" height="72" rx="10" fill="#CDEFDc"/>
+  <text x="451" y="160" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#1E6A4D">Goedgekeurd?</text>
+  <text x="451" y="180" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#1E6A4D">Dan telt die mee</text>
+
+  <rect x="608" y="26" width="266" height="208" rx="14" fill="#FFF2DC"/>
+  <text x="741" y="56" text-anchor="middle" font-family="Segoe UI, Arial" font-size="16" fill="#875918">Resultaat</text>
+  <text x="741" y="88" text-anchor="middle" font-family="Segoe UI, Arial" font-size="14" fill="#9C6B27">Gebied wisselt</text>
+  <text x="741" y="108" text-anchor="middle" font-family="Segoe UI, Arial" font-size="14" fill="#9C6B27">van eigenaar</text>
+  <rect x="654" y="132" width="174" height="72" rx="10" fill="#FFE5B8"/>
+  <text x="741" y="160" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#875918">Scorebord</text>
+  <text x="741" y="180" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#875918">wordt bijgewerkt</text>
+</svg>

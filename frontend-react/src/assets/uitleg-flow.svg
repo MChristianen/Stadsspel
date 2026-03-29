@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="220" viewBox="0 0 900 220" fill="none">
+  <rect width="900" height="220" rx="16" fill="#F4F7FF"/>
+  <rect x="32" y="56" width="170" height="108" rx="14" fill="#DDE7FF"/>
+  <text x="117" y="94" text-anchor="middle" font-family="Segoe UI, Arial" font-size="16" fill="#1F2D5A">Aanmelden</text>
+  <text x="117" y="120" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#394C86">Team maakt account</text>
+  <text x="117" y="138" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#394C86">via join-link</text>
+
+  <rect x="252" y="56" width="170" height="108" rx="14" fill="#D6F5E8"/>
+  <text x="337" y="94" text-anchor="middle" font-family="Segoe UI, Arial" font-size="16" fill="#0D5B40">Spelstart</text>
+  <text x="337" y="120" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#177255">Admin start</text>
+  <text x="337" y="138" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#177255">de sessie</text>
+
+  <rect x="472" y="56" width="170" height="108" rx="14" fill="#FFECCB"/>
+  <text x="557" y="94" text-anchor="middle" font-family="Segoe UI, Arial" font-size="16" fill="#7A4F0E">Inzenden</text>
+  <text x="557" y="120" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#8A631F">Tekst, foto of video</text>
+  <text x="557" y="138" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#8A631F">per gebied</text>
+
+  <rect x="692" y="56" width="170" height="108" rx="14" fill="#FFDDE0"/>
+  <text x="777" y="94" text-anchor="middle" font-family="Segoe UI, Arial" font-size="16" fill="#7F2130">Scorebord</text>
+  <text x="777" y="120" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#923447">Gebieden tellen</text>
+  <text x="777" y="138" text-anchor="middle" font-family="Segoe UI, Arial" font-size="13" fill="#923447">voor de winst</text>
+
+  <path d="M212 109H242" stroke="#4F69B0" stroke-width="4" stroke-linecap="round"/>
+  <path d="M432 109H462" stroke="#4F69B0" stroke-width="4" stroke-linecap="round"/>
+  <path d="M652 109H682" stroke="#4F69B0" stroke-width="4" stroke-linecap="round"/>
+</svg>

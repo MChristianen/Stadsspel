@@ -1,0 +1,29 @@
+{$DOMAIN} {
+    # API requests → backend
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    # Media files (foto's van inzendingen)
+    handle /media/* {
+        root * /srv
+        file_server
+    }
+
+    # Alles anders → React frontend
+    handle {
+        root * /srv/frontend
+        try_files {path} /index.html
+        file_server
+    }
+
+    # Security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+
+    # Compressie
+    encode gzip zstd
+}

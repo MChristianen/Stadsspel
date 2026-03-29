@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2196F3">
+    <title>Stadsspel</title>
+    
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <!-- Loading screen -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Laden...</p>
+    </div>
+
+    <!-- Auth screen -->
+    <div id="auth-screen" class="screen">
+        <div class="auth-container">
+            <h1>🏙️ Stadsspel</h1>
+            
+            <div id="login-form" class="auth-form">
+                <h2>Inloggen</h2>
+                <input type="text" id="login-name" placeholder="Teamnaam" required>
+                <input type="password" id="login-password" placeholder="Wachtwoord" required>
+                <button id="login-btn" class="btn btn-primary">Inloggen</button>
+                <p class="switch-auth">Nog geen account? <a href="#" id="show-register">Registreren</a></p>
+            </div>
+            
+            <div id="register-form" class="auth-form" style="display: none;">
+                <h2>Registreren</h2>
+                <input type="text" id="register-name" placeholder="Teamnaam" required>
+                <input type="password" id="register-password" placeholder="Wachtwoord (min. 6 tekens)" required>
+                <input type="color" id="register-color" value="#FF5733">
+                <label for="register-color">Kies teamkleur</label>
+                <button id="register-btn" class="btn btn-primary">Registreren</button>
+                <p class="switch-auth">Al een account? <a href="#" id="show-login">Inloggen</a></p>
+            </div>
+            
+            <div id="auth-error" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- Main app screen -->
+    <div id="app-screen" class="screen" style="display: none;">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>Stadsspel</h1>
+                <div class="timer" id="game-timer">
+                    <span id="timer-display">--:--:--</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tab navigation -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="map">
+                <span>🗺️</span>
+                <span>Kaart</span>
+            </button>
+            <button class="tab-btn" data-tab="leaderboard">
+                <span>🏆</span>
+                <span>Stand</span>
+            </button>
+            <button class="tab-btn" data-tab="submissions">
+                <span>📝</span>
+                <span>Mijn</span>
+            </button>
+            <button class="tab-btn" data-tab="profile">
+                <span>👤</span>
+                <span>Profiel</span>
+            </button>
+        </nav>
+
+        <!-- Tab content -->
+        <main class="tab-content">
+            <!-- Map tab -->
+            <div id="map-tab" class="tab-pane active">
+                <div id="map"></div>
+                <div class="offline-indicator" id="offline-indicator" style="display: none;">
+                    📡 Offline modus
+                </div>
+            </div>
+
+            <!-- Leaderboard tab -->
+            <div id="leaderboard-tab" class="tab-pane">
+                <div class="leaderboard-container">
+                    <h2>Klassement</h2>
+                    <div id="leaderboard-list" class="leaderboard-list"></div>
+                </div>
+            </div>
+
+            <!-- Submissions tab -->
+            <div id="submissions-tab" class="tab-pane">
+                <div class="submissions-container">
+                    <h2>Mijn Inzendingen</h2>
+                    <div id="my-submissions-list" class="submissions-list"></div>
+                </div>
+            </div>
+
+            <!-- Profile tab -->
+            <div id="profile-tab" class="tab-pane">
+                <div class="profile-container">
+                    <h2>Profiel</h2>
+                    <div class="profile-info">
+                        <div class="team-color" id="profile-color"></div>
+                        <h3 id="profile-name"></h3>
+                        <p id="profile-role"></p>
+                    </div>
+                    <button id="logout-btn" class="btn btn-secondary">Uitloggen</button>
+                    <button id="admin-panel-btn" class="btn btn-primary" style="display: none;">Admin Panel</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Area detail modal -->
+    <div id="area-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" id="close-area-modal">&times;</button>
+            <div id="area-detail"></div>
+        </div>
+    </div>
+
+    <!-- Submit modal -->
+    <div id="submit-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" id="close-submit-modal">&times;</button>
+            <h2>Opdracht Inzenden</h2>
+            <form id="submit-form" enctype="multipart/form-data">
+                <input type="hidden" id="submit-area-id">
+                
+                <div class="form-group">
+                    <label for="submit-text">Beschrijving *</label>
+                    <textarea id="submit-text" required rows="4"></textarea>
+                </div>
+                
+                <div class="form-group" id="score-group" style="display: none;">
+                    <label for="submit-score">Score</label>
+                    <input type="number" id="submit-score" step="0.01">
+                </div>
+                
+                <div class="form-group">
+                    <label for="submit-photos">Foto's</label>
+                    <input type="file" id="submit-photos" accept="image/*" multiple>
+                </div>
+                
+                <div class="form-group">
+                    <label for="submit-videos">Video's</label>
+                    <input type="file" id="submit-videos" accept="video/*" multiple>
+                </div>
+                
+                <div id="submit-error" class="error-message"></div>
+                <div id="submit-cooldown" class="info-message"></div>
+                
+                <button type="submit" class="btn btn-primary">Verzenden</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- App JS modules -->
+    <script type="module" src="/js/api.js"></script>
+    <script type="module" src="/js/auth.js"></script>
+    <script type="module" src="/js/map.js"></script>
+    <script type="module" src="/js/leaderboard.js"></script>
+    <script type="module" src="/js/timer.js"></script>
+    <script type="module" src="/js/offline_queue.js"></script>
+    <script type="module">
+        // Main app initialization
+        import { initAuth } from './js/auth.js';
+        import { initMap } from './js/map.js';
+        import { initLeaderboard } from './js/leaderboard.js';
+        import { initTimer } from './js/timer.js';
+        import { initOfflineQueue } from './js/offline_queue.js';
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.error('Service Worker registration failed:', err));
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            initAuth();
+            initOfflineQueue();
+        });
+
+        // Export init functions for auth.js to call after login
+        window.initAppModules = () => {
+            initMap();
+            initLeaderboard();
+            initTimer();
+        };
+
+        // Tab navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                
+                // Update buttons
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Update content
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                document.getElementById(`${tab}-tab`).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

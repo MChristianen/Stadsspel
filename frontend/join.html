@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doe Mee - Stadsspel</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .join-container {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .join-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .join-header h1 {
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+
+        .session-info {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .session-info p {
+            margin: 8px 0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        .color-picker-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .color-preview {
+            width: 80px;
+            height: 50px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            transition: all 0.3s;
+        }
+
+        .preset-colors {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .preset-color {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .preset-color:hover {
+            transform: scale(1.1);
+        }
+
+        .preset-color.selected {
+            border-color: #333;
+            transform: scale(1.15);
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .status-waiting { background: #FF9800; color: white; }
+        .status-active { background: #4CAF50; color: white; }
+    </style>
+</head>
+<body>
+    <div class="join-container">
+        <div class="join-header">
+            <h1>🎮 Stadsspel</h1>
+            <p>Doe mee met het spel!</p>
+        </div>
+
+        <div id="error-message" class="error-message"></div>
+        <div id="success-message" class="success-message"></div>
+
+        <div id="session-info" class="session-info" style="display: none;">
+            <h3 style="margin-top: 0;">Spel Info</h3>
+            <p><strong>Stad:</strong> <span id="city-name">-</span></p>
+            <p><strong>Duur:</strong> <span id="duration">-</span> minuten</p>
+            <p><strong>Status:</strong> <span id="status-badge"></span></p>
+            <p><strong>Teams:</strong> <span id="team-count">-</span></p>
+        </div>
+
+        <form id="join-form">
+            <div class="form-group">
+                <label for="team-name">Teamnaam *</label>
+                <input 
+                    type="text" 
+                    id="team-name" 
+                    placeholder="Voer jullie teamnaam in"
+                    required
+                    maxlength="100"
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Wachtwoord *</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="Kies een wachtwoord"
+                    required
+                    minlength="6"
+                >
+            </div>
+
+            <div class="form-group">
+                <label>Team Kleur *</label>
+                <div class="color-picker-group">
+                    <input 
+                        type="color" 
+                        id="color-picker" 
+                        value="#FF0000"
+                        style="width: 60px; height: 50px; border: none; border-radius: 8px; cursor: pointer;"
+                    >
+                    <div class="color-preview" id="color-preview"></div>
+                    <span id="color-hex">#FF0000</span>
+                </div>
+                <div class="preset-colors">
+                    <div class="preset-color" data-color="#FF0000" style="background: #FF0000;" title="Rood"></div>
+                    <div class="preset-color" data-color="#0000FF" style="background: #0000FF;" title="Blauw"></div>
+                    <div class="preset-color" data-color="#00FF00" style="background: #00FF00;" title="Groen"></div>
+                    <div class="preset-color" data-color="#FFFF00" style="background: #FFFF00;" title="Geel"></div>
+                    <div class="preset-color" data-color="#FF00FF" style="background: #FF00FF;" title="Magenta"></div>
+                    <div class="preset-color" data-color="#00FFFF" style="background: #00FFFF;" title="Cyaan"></div>
+                    <div class="preset-color" data-color="#FFA500" style="background: #FFA500;" title="Oranje"></div>
+                    <div class="preset-color" data-color="#800080" style="background: #800080;" title="Paars"></div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+                🎯 Doe Mee!
+            </button>
+        </form>
+
+        <p style="text-align: center; margin-top: 20px; color: #757575; font-size: 14px;">
+            Heb je geen join code? Vraag deze aan je spelleider.
+        </p>
+    </div>
+
+    <script type="module" src="/js/join.js"></script>
+</body>
+</html>

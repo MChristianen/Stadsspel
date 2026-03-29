@@ -1,0 +1,87 @@
+services:
+  # === DATABASE ===
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: stadsspel_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-stadsspel}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-stadsspel}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-stadsspel}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  # === BACKEND (FastAPI) ===
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: stadsspel_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-stadsspel}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-stadsspel}
+      ENVIRONMENT: production
+      SECRET_KEY: ${SECRET_KEY}
+      CORS_ORIGINS: https://${DOMAIN}
+      MEDIA_STORAGE_TYPE: local
+      MEDIA_LOCAL_PATH: /app/media
+      MEDIA_BASE_URL: https://${DOMAIN}/media
+      SERVE_LEGACY_FRONTEND: "false"
+    volumes:
+      - media_data:/app/media
+    networks:
+      - internal
+
+  # === FRONTEND (React build) ===
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend-react/Dockerfile
+    container_name: stadsspel_frontend
+    volumes:
+      - frontend_dist:/dist
+    # This container exits after copying files, that's OK
+    restart: "no"
+
+  # === REVERSE PROXY (Caddy = automatische HTTPS) ===
+  caddy:
+    image: caddy:2-alpine
+    container_name: stadsspel_caddy
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - frontend_dist:/srv/frontend:ro
+      - media_data:/srv/media:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DOMAIN: ${DOMAIN}
+    networks:
+      - internal
+
+volumes:
+  postgres_data:
+  media_data:
+  frontend_dist:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
