@@ -4,6 +4,14 @@
 - Een creditcard/betaalkaart (voor server + domein)
 - ~30 minuten tijd
 
+## Kosten overzicht
+| Onderdeel | Kosten |
+|-----------|--------|
+| Hetzner CX22 server | ~€4/maand |
+| .eu domeinnaam | ~€10/jaar |
+| Cloudflare CDN | Gratis |
+| **Totaal** | **~€5/maand** |
+
 ---
 
 ## Stap 1: Server huren bij Hetzner (~€4/maand)
@@ -12,7 +20,7 @@
 2. Maak een account aan
 3. Klik **"Add Server"**
 4. Kies:
-   - **Location**: Falkenstein (DE) of Amsterdam (NL)
+   - **Location**: Falkenstein (DE) — centraal in Europa, lage latency overal
    - **Image**: Ubuntu 24.04
    - **Type**: Shared vCPU → **CX22** (2 vCPU, 4GB RAM) — €3,99/maand
    - **SSH Key**: klik "Add SSH Key" (zie hieronder hoe je er een maakt)
@@ -34,18 +42,14 @@ Plak dit in het Hetzner "Add SSH Key" veld.
 
 ---
 
-## Stap 2: Domeinnaam kopen (~€10/jaar)
+## Stap 2: Domeinnaam kopen via Cloudflare (~€10/jaar)
 
-**Optie A: Cloudflare (aanbevolen)**
+> 💡 **Waarom Cloudflare?** Naast domeinnaam registratie krijg je een **gratis CDN** dat je app snel maakt in heel Europa. Spelers in Portugal, Finland of Roemenië krijgen allemaal snelle laadtijden.
+
 1. Ga naar [cloudflare.com](https://www.cloudflare.com/)
-2. Maak account → "Register domain"
-3. Zoek bijv. `stadsspel.nl` of `stadsspel.eu`
+2. Maak een account aan → "Register domain"
+3. Zoek een `.eu` domein (bijv. `stadsspel.eu`) — werkt in elk Europees land
 4. Koop het domein
-
-**Optie B: TransIP (Nederlands)**
-1. Ga naar [transip.nl](https://www.transip.nl/)
-2. Zoek een domeinnaam
-3. Koop en beheer via hun panel
 
 ### DNS instellen
 Maak een **A-record** aan:
@@ -54,7 +58,15 @@ Maak een **A-record** aan:
 - **Waarde**: het IP-adres van je Hetzner server
 - **TTL**: Auto
 
-⚠️ Als je Cloudflare gebruikt: zet de **proxy (oranje wolkje) UIT** zodat Caddy de SSL kan regelen.
+### Cloudflare CDN inschakelen (gratis, aanbevolen)
+Dit zorgt ervoor dat statische bestanden (JS, CSS, afbeeldingen) worden gecached op servers door heel Europa:
+
+1. Zet het **oranje wolkje (Proxy) AAN** bij je A-record
+2. Ga naar **SSL/TLS** → zet modus op **Full (Strict)**
+3. Ga naar **Caching** → **Cache Level**: Standard
+4. Optioneel: **Speed** → schakel **Auto Minify** in voor JS/CSS
+
+> ⚠️ **Wil je GEEN Cloudflare CDN?** Zet het oranje wolkje UIT (grijs). Caddy regelt dan zelf de SSL. Dit werkt ook prima, maar spelers ver van de server kunnen iets meer vertraging ervaren.
 
 ---
 
@@ -100,27 +112,40 @@ scp -r ./* root@JOUW-SERVER-IP:/opt/stadsspel/
 ## Stap 5: Environment configureren
 
 **Op de server** (via SSH):
+
+### 5a. Genereer eerst een secret key
+```bash
+python3 -c "import secrets; print(secrets.token_urlsafe(64))"
+```
+Dit print een lange random string. **Kopieer deze** (selecteer en rechtermuisklik).
+
+### 5b. Maak het configuratiebestand
 ```bash
 cd /opt/stadsspel
-
-# Kopieer het voorbeeld en pas aan
 cp .env.production.example .env.production
 nano .env.production
 ```
 
-Vul in:
+Je ziet nu een teksteditor. Pas de volgende 3 regels aan:
+
 ```env
-DOMAIN=jouwdomein.nl
-DB_PASSWORD=kies-iets-willekeurigs-123!
-SECRET_KEY=<genereer met onderstaand commando>
+DOMAIN=stadsspel.org
+DB_PASSWORD=MijnSuperGeheimWachtwoord123!
+SECRET_KEY=<plak hier de string uit stap 5a>
 ```
 
-Genereer een veilige SECRET_KEY:
+De rest (DB_USER, DB_NAME) laat je staan — de standaard waarden zijn prima.
+
+### 5c. Opslaan en sluiten
+1. Druk `Ctrl+O` (opslaan)
+2. Druk `Enter` (bestandsnaam bevestigen)
+3. Druk `Ctrl+X` (nano sluiten)
+
+### 5d. Controleer of het goed is opgeslagen
 ```bash
-python3 -c "import secrets; print(secrets.token_urlsafe(64))"
+cat .env.production
 ```
-
-Sla op met `Ctrl+O`, `Enter`, `Ctrl+X`.
+Je zou je ingevulde waarden moeten zien.
 
 ---
 
@@ -215,12 +240,18 @@ docker compose -f docker-compose.prod.yml up -d --build
 ## Architectuur
 
 ```
-Internet
+Spelers (heel Europa)
    │
    ▼
+┌────────────────┐
+│  Cloudflare    │ ← Gratis CDN + DDoS bescherming
+│  (optioneel)   │   Cached static files op edge servers
+└───────┬────────┘
+        │
+        ▼
 ┌──────────┐
 │  Caddy   │ ← Automatische HTTPS (Let's Encrypt)
-│ :80/:443 │
+│ :80/:443 │   Hetzner server in Falkenstein (DE)
 └────┬─────┘
      │
      ├── /api/*     → Backend (FastAPI :8000)
