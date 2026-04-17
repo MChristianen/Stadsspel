@@ -110,7 +110,8 @@ def get_areas_geojson(
                 "challenge": {
                     "id": challenge.id,
                     "mode": challenge.mode.value,
-                    "title": challenge.title
+                    "title": challenge.title,
+                    "description": challenge.description
                 } if challenge else None,
                 "ownership": {
                     "owner_team_id": ownership.owner_team_id if ownership else None,

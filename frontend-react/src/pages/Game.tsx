@@ -238,6 +238,7 @@ const Game: React.FC = () => {
                 <div style="min-width: 200px;">
                   <h4 style="margin: 0 0 8px 0;">${feature.properties.name}</h4>
                   <p style="margin: 4px 0;"><strong>Opdracht:</strong><br/>${feature.properties.challenge?.title || 'Geen opdracht'}</p>
+                  <p style="margin: 4px 0; font-size: 0.9em;">${feature.properties.challenge?.description || ''}</p>
                   <p style="margin: 4px 0;"><strong>Mode:</strong> ${modeEmoji} ${feature.properties.challenge?.mode === 'LAST_APPROVED_WINS' ? 'Laatst goedgekeurd wint' : 'Hoogste score wint'}</p>
                   ${feature.properties.ownership?.owner_team_name 
                     ? `<p style="margin: 4px 0;"><strong>Eigenaar:</strong> <span style="color: ${feature.properties.ownership.owner_team_color}; font-weight: bold;">${feature.properties.ownership.owner_team_name}</span></p>
@@ -270,6 +271,10 @@ const Game: React.FC = () => {
                   <p className="challenge-text">
                     <strong>Opdracht:</strong> {area?.challenge?.title || 'Geen opdracht'}
                   </p>
+                  {area?.challenge?.description && (
+                    <p className="challenge-description" style={{ fontSize: '0.9em', whiteSpace: 'pre-wrap' }}
+                       dangerouslySetInnerHTML={{ __html: area.challenge.description.replace(/(https:\/\/maps\.google\.com\/[^\s)]+)/g, '<a href="$1" target="_blank" rel="noopener">📍 Open in Google Maps</a>') }} />
+                  )}
                   <p className="challenge-mode">
                     <strong>Mode:</strong>{' '}
                     {area?.challenge?.mode === 'LAST_APPROVED_WINS'
