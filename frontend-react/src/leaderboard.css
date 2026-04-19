@@ -1,42 +1,43 @@
-.leaderboard-container {
+.scoreboard-container {
   max-width: 720px;
   margin: 0 auto;
   padding: 1rem;
 }
 
-.leaderboard-list {
+.scoreboard-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.leaderboard-item {
+.scoreboard-row {
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
+  gap: 0.5rem;
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   padding: 0.5rem 1rem;
   font-size: 1rem;
-  gap: 0.5rem;
   white-space: nowrap;
 }
 
-.leaderboard-item .rank {
+.scoreboard-rank {
   font-weight: bold;
   min-width: 2.2em;
   text-align: right;
+  color: #667eea;
 }
 
-.leaderboard-item .team-color {
+.scoreboard-color {
   width: 1.2em;
   height: 1.2em;
   border-radius: 50%;
   border: 1px solid #eee;
 }
 
-.leaderboard-item .team-name {
+.scoreboard-team {
   font-weight: 500;
   min-width: 0;
   overflow: hidden;
@@ -44,22 +45,19 @@
   white-space: nowrap;
 }
 
-.leaderboard-item .score-summary {
+.scoreboard-summary {
   font-size: 0.95em;
   color: #666;
   white-space: nowrap;
 }
 
 @media (max-width: 600px) {
-  .leaderboard-item {
+  .scoreboard-row {
     font-size: 0.9rem;
     padding: 0.4rem 0.5rem;
-    grid-template-columns: auto auto minmax(0, 1fr) auto;
   }
-  .leaderboard-item .team-name {
-    max-width: none;
-  }
-  .leaderboard-item .score-summary {
+
+  .scoreboard-summary {
     font-size: 0.86em;
   }
 }
