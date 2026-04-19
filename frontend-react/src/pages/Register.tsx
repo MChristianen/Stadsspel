@@ -19,6 +19,10 @@ const Register: React.FC = () => {
       if (joinCode) {
         try {
           const session = await apiClient.getSession(joinCode);
+          if (session.is_finished) {
+            navigate(`/results/${joinCode}`, { replace: true });
+            return;
+          }
           setSessionInfo({ city_name: session.city_name, duration_minutes: session.duration_minutes });
         } catch (err) {
           console.error('Failed to fetch session:', err);
@@ -26,7 +30,7 @@ const Register: React.FC = () => {
       }
     };
     fetchSession();
-  }, [joinCode]);
+  }, [joinCode, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +39,12 @@ const Register: React.FC = () => {
 
     try {
       if (joinCode) {
+        const session = await apiClient.getSession(joinCode);
+        if (session.is_finished) {
+          navigate(`/results/${joinCode}`, { replace: true });
+          return;
+        }
+
         const teamColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
         // Use join endpoint when registering via join code
         const joinResponse = await apiClient.joinGame(joinCode, {

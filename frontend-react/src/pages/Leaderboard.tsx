@@ -26,11 +26,8 @@ const Leaderboard: React.FC = () => {
               <div className="rank">#{entry.rank}</div>
               <div className="team-color" style={{ backgroundColor: entry.team_color }}></div>
               <div className="team-name">{entry.team_name}</div>
-              <div className="areas-owned">
-                {entry.points.toFixed(1)} punten
-              </div>
-              <div className="areas-owned">
-                {entry.territory_count} {entry.territory_count === 1 ? 'gebied' : 'gebieden'}
+              <div className="score-summary">
+                {entry.points.toFixed(1)} punten · {entry.territory_count} {entry.territory_count === 1 ? 'gebied' : 'gebieden'}
               </div>
             </div>
           ))}

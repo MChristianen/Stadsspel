@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../services/api';
 import type { SessionResponse } from '../types/api';
 
 const Join: React.FC = () => {
   const { joinCode } = useParams<{ joinCode: string }>();
+  const navigate = useNavigate();
   const [session, setSession] = useState<SessionResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,6 +17,10 @@ const Join: React.FC = () => {
       setLoading(true);
       try {
         const sessionData = await apiClient.getSession(joinCode);
+        if (sessionData.is_finished) {
+          navigate(`/results/${joinCode}`, { replace: true });
+          return;
+        }
         setSession(sessionData);
       } catch (err) {
         setError('Ongeldige join code. Controleer de link en probeer opnieuw.');
@@ -26,7 +31,7 @@ const Join: React.FC = () => {
     };
 
     fetchSession();
-  }, [joinCode]);
+  }, [joinCode, navigate]);
 
   if (!joinCode) {
     return (

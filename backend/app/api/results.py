@@ -1,4 +1,5 @@
 """Public results endpoints."""
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -33,6 +34,11 @@ def get_public_results(
     session = db.query(GameSession).filter(GameSession.join_code == join_code.upper()).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    if session.end_time and datetime.utcnow() >= session.end_time and not session.is_finished:
+        session.is_finished = True
+        session.is_active = False
+        db.commit()
+        db.refresh(session)
     if not session.is_finished:
         raise HTTPException(status_code=400, detail="Results are not available yet")
 

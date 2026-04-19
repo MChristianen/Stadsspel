@@ -1,5 +1,5 @@
 .leaderboard-container {
-  max-width: 500px;
+  max-width: 720px;
   margin: 0 auto;
   padding: 1rem;
 }
@@ -11,19 +11,20 @@
 }
 
 .leaderboard-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   padding: 0.5rem 1rem;
   font-size: 1rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
+  white-space: nowrap;
 }
 
 .leaderboard-item .rank {
   font-weight: bold;
-  margin-right: 0.5rem;
   min-width: 2.2em;
   text-align: right;
 }
@@ -32,38 +33,33 @@
   width: 1.2em;
   height: 1.2em;
   border-radius: 50%;
-  margin-right: 0.5rem;
   border: 1px solid #eee;
 }
 
 .leaderboard-item .team-name {
-  flex: 1 1 120px;
   font-weight: 500;
-  margin-right: 0.5rem;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.leaderboard-item .areas-owned {
+.leaderboard-item .score-summary {
   font-size: 0.95em;
   color: #666;
-  margin-left: 0.5rem;
   white-space: nowrap;
 }
 
 @media (max-width: 600px) {
   .leaderboard-item {
-    font-size: 0.98rem;
+    font-size: 0.9rem;
     padding: 0.4rem 0.5rem;
-    flex-wrap: wrap;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
   }
   .leaderboard-item .team-name {
-    max-width: 90px;
+    max-width: none;
   }
-  .leaderboard-item .areas-owned {
-    font-size: 0.92em;
-    margin-left: 0.3rem;
+  .leaderboard-item .score-summary {
+    font-size: 0.86em;
   }
 }

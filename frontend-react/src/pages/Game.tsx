@@ -7,7 +7,8 @@ import { useAuth } from '../contexts/AuthContext';
 import 'leaflet/dist/leaflet.css';
 
 const Game: React.FC = () => {
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const photoCameraInputRef = useRef<HTMLInputElement>(null);
+  const videoCameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const { team } = useAuth();
   const navigate = useNavigate();
@@ -25,16 +26,22 @@ const Game: React.FC = () => {
     return () => document.removeEventListener('selectArea', handleSelectArea);
   }, []);
 
-    // Scroll to assignment form when area is selected
-    useEffect(() => {
-      if (selectedAreaId && assignmentFormRef.current) {
-        assignmentFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, [selectedAreaId]);
+  // Only the popup button changes selectedAreaId, so the form scroll happens from that action.
+  useEffect(() => {
+    if (selectedAreaId && assignmentFormRef.current) {
+      assignmentFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [selectedAreaId]);
   const [submissionText, setSubmissionText] = useState('');
   const [submissionScore, setSubmissionScore] = useState<number>(50);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [error, setError] = useState('');
+
+  const addMediaFiles = (files: FileList | null) => {
+    if (files && files.length > 0) {
+      setMediaFiles((prev) => [...prev, ...Array.from(files)]);
+    }
+  };
 
   // Queries
   const { data: gameStatus } = useQuery({
@@ -185,6 +192,16 @@ const Game: React.FC = () => {
   const hours = Math.floor(timeRemaining / 3600);
   const minutes = Math.floor((timeRemaining % 3600) / 60);
   const seconds = timeRemaining % 60;
+  const areasRenderKey = useMemo(
+    () =>
+      areasData?.features
+        .map((feature) => {
+          const ownership = feature.properties.ownership;
+          return `${feature.properties.id}:${ownership?.owner_team_id ?? 'none'}:${ownership?.owner_team_color ?? 'none'}:${ownership?.current_high_score ?? 'none'}`;
+        })
+        .join('|') ?? 'no-areas',
+    [areasData]
+  );
 
   // Show loading state
   if (areasLoading || !gameStatus) {
@@ -238,6 +255,7 @@ const Game: React.FC = () => {
         />
         {areasData && (
           <GeoJSON
+            key={areasRenderKey}
             data={areasData}
             style={(feature) => ({
               fillColor: feature?.properties.ownership?.owner_team_color || '#cccccc',
@@ -246,10 +264,6 @@ const Game: React.FC = () => {
               weight: 2,
             })}
             onEachFeature={(feature, layer) => {
-              layer.on({
-                click: () => setSelectedAreaId(feature.properties.id),
-              });
-              
               const cooldownTime = getCooldownTime(feature.properties.id);
               const modeEmoji = feature.properties.challenge?.mode === 'LAST_APPROVED_WINS' ? '🏆' : '📊';
               const popupContent = `
@@ -392,20 +406,35 @@ const Game: React.FC = () => {
               <label>Foto's / Video's <span style={{color: 'red'}}>*</span></label>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
                 <label style={{ flex: 1 }}>
-                  <button type="button" className="btn-primary" style={{ width: '100%' }} onClick={() => cameraInputRef.current?.click()} disabled={isCooldownActive(selectedAreaId)}>
-                    📷 Maak foto/video
+                  <button type="button" className="btn-primary" style={{ width: '100%' }} onClick={() => photoCameraInputRef.current?.click()} disabled={isCooldownActive(selectedAreaId)}>
+                    Maak foto
                   </button>
                   <input
                     type="file"
-                    accept="image/*,video/*"
-                    capture
+                    accept="image/*"
+                    capture="environment"
                     style={{ display: 'none' }}
-                    ref={cameraInputRef}
+                    ref={photoCameraInputRef}
                     onChange={(e) => {
-                      const files = e.target.files;
-                      if (files && files.length > 0) {
-                        setMediaFiles((prev) => [...prev, ...Array.from(files)]);
-                      }
+                      addMediaFiles(e.target.files);
+                      e.target.value = '';
+                    }}
+                    disabled={isCooldownActive(selectedAreaId)}
+                  />
+                </label>
+                <label style={{ flex: 1 }}>
+                  <button type="button" className="btn-primary" style={{ width: '100%' }} onClick={() => videoCameraInputRef.current?.click()} disabled={isCooldownActive(selectedAreaId)}>
+                    Maak video
+                  </button>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    capture="environment"
+                    style={{ display: 'none' }}
+                    ref={videoCameraInputRef}
+                    onChange={(e) => {
+                      addMediaFiles(e.target.files);
+                      e.target.value = '';
                     }}
                     disabled={isCooldownActive(selectedAreaId)}
                   />
@@ -421,10 +450,8 @@ const Game: React.FC = () => {
                     style={{ display: 'none' }}
                     ref={galleryInputRef}
                     onChange={(e) => {
-                      const files = e.target.files;
-                      if (files && files.length > 0) {
-                        setMediaFiles((prev) => [...prev, ...Array.from(files)]);
-                      }
+                      addMediaFiles(e.target.files);
+                      e.target.value = '';
                     }}
                     disabled={isCooldownActive(selectedAreaId)}
                   />

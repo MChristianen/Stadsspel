@@ -506,6 +506,12 @@ def get_session_by_code(
     session = db.query(GameSession).filter(GameSession.join_code == join_code.upper()).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+
+    if session.end_time and datetime.utcnow() >= session.end_time and not session.is_finished:
+        session.is_finished = True
+        session.is_active = False
+        db.commit()
+        db.refresh(session)
     
     city = db.query(City).filter(City.id == session.city_id).first()
     team_count = db.query(Team).filter(

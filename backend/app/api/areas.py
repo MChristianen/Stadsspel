@@ -79,7 +79,7 @@ def get_areas_geojson(
         )
 
     areas = db.query(Area).filter(Area.city_id == session.city_id).all()
-    include_live_ownership = session.is_active
+    include_live_ownership = session.is_active or session.is_finished
     
     features = []
     for area in areas:
