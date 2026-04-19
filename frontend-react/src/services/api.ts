@@ -22,6 +22,7 @@ import type {
   CityPointsConfig,
   UpdateCityPointsConfigRequest,
   PublicResultsResponse,
+  PublicMediaGalleryArea,
 } from '../types/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -269,6 +270,13 @@ class ApiClient {
 
   async getPublicResults(joinCode: string): Promise<PublicResultsResponse> {
     const response = await this.client.get(`/results/${joinCode}`, {
+      headers: { skipAuth: true },
+    } as AxiosRequestConfig);
+    return response.data;
+  }
+
+  async getPublicMediaGallery(joinCode: string): Promise<PublicMediaGalleryArea[]> {
+    const response = await this.client.get(`/results/${joinCode}/media`, {
       headers: { skipAuth: true },
     } as AxiosRequestConfig);
     return response.data;

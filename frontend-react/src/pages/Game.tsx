@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
@@ -7,10 +7,19 @@ import { useAuth } from '../contexts/AuthContext';
 import 'leaflet/dist/leaflet.css';
 
 const Game: React.FC = () => {
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const { team } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedAreaId, setSelectedAreaId] = useState<number | null>(null);
+  const assignmentFormRef = useRef<HTMLDivElement>(null);
+    // Scroll to assignment form when area is selected
+    useEffect(() => {
+      if (selectedAreaId && assignmentFormRef.current) {
+        assignmentFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, [selectedAreaId]);
   const [submissionText, setSubmissionText] = useState('');
   const [submissionScore, setSubmissionScore] = useState<number>(50);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
@@ -89,13 +98,11 @@ const Game: React.FC = () => {
     e.preventDefault();
     if (!selectedAreaId) return;
 
-    // Validate that at least one content type is provided
-    const hasText = submissionText.trim().length > 0;
+    // Require at least one photo or video for every submission
     const hasMedia = mediaFiles.length > 0;
-    
-    if (!hasText && !hasMedia) {
-      setError('Je moet minimaal tekst, een foto of een video toevoegen');
-      alert('Je moet minimaal tekst, een foto of een video toevoegen');
+    if (!hasMedia) {
+      setError('Je moet minimaal een foto of video toevoegen');
+      alert('Je moet minimaal een foto of video toevoegen');
       return;
     }
 
@@ -261,7 +268,7 @@ const Game: React.FC = () => {
       </MapContainer>
 
       {selectedAreaId && (
-        <div className="submission-form">
+        <div className="submission-form" ref={assignmentFormRef}>
           {(() => {
             const area = areasData?.features.find((f) => f.properties.id === selectedAreaId)?.properties;
             return (
@@ -371,14 +378,47 @@ const Game: React.FC = () => {
             )}
 
             <div className="form-group">
-              <label>Foto's / Video's (optioneel)</label>
-              <input
-                type="file"
-                multiple
-                accept="image/*,video/*"
-                onChange={(e) => setMediaFiles(Array.from(e.target.files || []))}
-                disabled={isCooldownActive(selectedAreaId)}
-              />
+              <label>Foto's / Video's <span style={{color: 'red'}}>*</span></label>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                <label style={{ flex: 1 }}>
+                  <button type="button" className="btn-primary" style={{ width: '100%' }} onClick={() => cameraInputRef.current?.click()} disabled={isCooldownActive(selectedAreaId)}>
+                    📷 Maak foto/video
+                  </button>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    capture
+                    style={{ display: 'none' }}
+                    ref={cameraInputRef}
+                    onChange={(e) => {
+                      const files = e.target.files;
+                      if (files && files.length > 0) {
+                        setMediaFiles((prev) => [...prev, ...Array.from(files)]);
+                      }
+                    }}
+                    disabled={isCooldownActive(selectedAreaId)}
+                  />
+                </label>
+                <label style={{ flex: 1 }}>
+                  <button type="button" className="btn-secondary" style={{ width: '100%' }} onClick={() => galleryInputRef.current?.click()} disabled={isCooldownActive(selectedAreaId)}>
+                    🖼️ Kies uit galerij
+                  </button>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    ref={galleryInputRef}
+                    onChange={(e) => {
+                      const files = e.target.files;
+                      if (files && files.length > 0) {
+                        setMediaFiles((prev) => [...prev, ...Array.from(files)]);
+                      }
+                    }}
+                    disabled={isCooldownActive(selectedAreaId)}
+                  />
+                </label>
+              </div>
               {mediaFiles.length > 0 && (
                 <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
                   {mediaFiles.length} bestand(en) geselecteerd

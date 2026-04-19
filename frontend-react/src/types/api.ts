@@ -258,3 +258,20 @@ export interface PublicResultsResponse {
   final_standings: PublicResultStanding[];
   points_history: PublicResultHistoryPoint[];
 }
+
+export interface PublicMediaGalleryItem {
+  id: number;
+  team_id: number;
+  team_name: string;
+  area_id: number;
+  area_name: string;
+  text: string;
+  created_at: string;
+  media: SubmissionMedia[];
+}
+
+export interface PublicMediaGalleryArea {
+  area_id: number;
+  area_name: string;
+  submissions: PublicMediaGalleryItem[];
+}

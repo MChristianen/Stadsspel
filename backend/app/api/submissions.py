@@ -91,15 +91,13 @@ async def create_submission(
     Submit a challenge attempt for an area.
     Requires: At least one of text, photos, or videos.
     """
-    # Validate that at least one content type is provided
-    has_text = text and text.strip()
+    # Require at least one photo or video for every submission
     has_photos = photos and any(p.filename for p in photos)
     has_videos = videos and any(v.filename for v in videos)
-    
-    if not (has_text or has_photos or has_videos):
+    if not (has_photos or has_videos):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Je moet minimaal tekst, een foto of een video uploaden"
+            detail="Je moet minimaal een foto of video uploaden"
         )
 
     valid_photo_files = [p for p in photos if p.filename]

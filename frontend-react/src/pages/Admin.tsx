@@ -700,11 +700,32 @@ const Admin: React.FC = () => {
                 {submission.score !== null && <p>Score: {submission.score}</p>}
                 {submission.media.length > 0 && (
                   <div className="media-files">
-                    {submission.media.map((file) => (
-                      <a key={file.id} href={file.url} target="_blank" rel="noopener noreferrer">
-                        {file.media_type} {file.id}
-                      </a>
-                    ))}
+                    {submission.media.map((file) => {
+                      // Show image or video inline if possible, else fallback to link
+                      if (file.media_type === 'PHOTO' || file.media_type === 'image' || file.media_type.startsWith('image')) {
+                        return (
+                          <div key={file.id} style={{ marginBottom: 8 }}>
+                            <a href={file.url} target="_blank" rel="noopener noreferrer">
+                              <img src={file.url} alt={`media-${file.id}`} style={{ maxWidth: 200, maxHeight: 150, display: 'block', marginBottom: 2 }} />
+                            </a>
+                          </div>
+                        );
+                      } else if (file.media_type === 'VIDEO' || file.media_type === 'video' || file.media_type.startsWith('video')) {
+                        return (
+                          <div key={file.id} style={{ marginBottom: 8 }}>
+                            <a href={file.url} target="_blank" rel="noopener noreferrer">
+                              <video src={file.url} controls style={{ maxWidth: 200, maxHeight: 150, display: 'block', marginBottom: 2 }} />
+                            </a>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <a key={file.id} href={file.url} target="_blank" rel="noopener noreferrer">
+                            {file.media_type} {file.id}
+                          </a>
+                        );
+                      }
+                    })}
                   </div>
                 )}
                 <div className="submission-actions">

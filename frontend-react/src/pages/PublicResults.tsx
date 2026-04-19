@@ -3,12 +3,20 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '../services/api';
 
+
 const PublicResults: React.FC = () => {
   const { joinCode } = useParams<{ joinCode: string }>();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['publicResults', joinCode],
     queryFn: () => apiClient.getPublicResults(joinCode!),
+    enabled: !!joinCode,
+    retry: 1,
+  });
+
+  const { data: mediaGallery = [], isLoading: loadingGallery } = useQuery({
+    queryKey: ['publicResultsMedia', joinCode],
+    queryFn: () => apiClient.getPublicMediaGallery(joinCode!),
     enabled: !!joinCode,
     retry: 1,
   });
@@ -99,6 +107,43 @@ const PublicResults: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      <h2 style={{ marginTop: '32px' }}>Media per gebied</h2>
+      {loadingGallery ? (
+        <div>Laden...</div>
+      ) : (
+        mediaGallery.map((area) => (
+          <div key={area.area_id} style={{ marginBottom: '32px' }}>
+            <h3 style={{ marginBottom: '8px' }}>{area.area_name}</h3>
+            {area.submissions.length === 0 ? (
+              <p style={{ color: '#888', fontSize: '14px' }}>Geen media voor dit gebied.</p>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+                {area.submissions.map((sub) => (
+                  <div key={sub.id} style={{ minWidth: 180, maxWidth: 220, background: '#fafafa', borderRadius: 8, padding: 8, boxShadow: '0 1px 4px #0001' }}>
+                    <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 4 }}>{sub.team_name}</div>
+                    <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>{new Date(sub.created_at).toLocaleString()}</div>
+                    <div style={{ fontSize: 13, marginBottom: 6 }}>{sub.text}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {sub.media.map((m) => (
+                        m.media_type === 'PHOTO' ? (
+                          <a key={m.id} href={m.url} target="_blank" rel="noopener noreferrer">
+                            <img src={m.url} alt="media" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #eee' }} />
+                          </a>
+                        ) : (
+                          <a key={m.id} href={m.url} target="_blank" rel="noopener noreferrer">
+                            <video src={m.url} style={{ width: 80, height: 80, borderRadius: 4, border: '1px solid #eee' }} controls preload="none" />
+                          </a>
+                        )
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))
+      )}
     </div>
   );
 };

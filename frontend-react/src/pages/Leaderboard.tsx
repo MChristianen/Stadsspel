@@ -1,4 +1,5 @@
 import React from 'react';
+import '../leaderboard.css';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../services/api';
 
