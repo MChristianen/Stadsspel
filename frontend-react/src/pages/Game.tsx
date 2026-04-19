@@ -14,6 +14,17 @@ const Game: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedAreaId, setSelectedAreaId] = useState<number | null>(null);
   const assignmentFormRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleSelectArea = (event: Event) => {
+      const areaId = (event as CustomEvent<number>).detail;
+      setSelectedAreaId(areaId);
+    };
+
+    document.addEventListener('selectArea', handleSelectArea);
+    return () => document.removeEventListener('selectArea', handleSelectArea);
+  }, []);
+
     // Scroll to assignment form when area is selected
     useEffect(() => {
       if (selectedAreaId && assignmentFormRef.current) {
@@ -343,7 +354,7 @@ const Game: React.FC = () => {
               border: '2px solid #ffc107'
             }}>
               <p style={{ margin: 0, fontSize: '14px', color: '#856404' }}>
-                ℹ️ <strong>Verplicht:</strong> Voeg minimaal één van de volgende toe: tekst, foto, of video
+                ℹ️ <strong>Verplicht:</strong> Voeg minimaal een foto of video toe
               </p>
             </div>
 
