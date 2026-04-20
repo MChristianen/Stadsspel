@@ -15,7 +15,9 @@ const Waiting: React.FC = () => {
   });
 
   useEffect(() => {
-    if (gameStatus?.is_active) {
+    if (gameStatus?.is_finished && gameStatus.join_code) {
+      navigate(`/results/${gameStatus.join_code}`, { replace: true });
+    } else if (gameStatus?.is_active) {
       navigate('/');
     }
   }, [gameStatus, navigate]);

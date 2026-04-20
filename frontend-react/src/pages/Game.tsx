@@ -58,9 +58,12 @@ const Game: React.FC = () => {
     refetchInterval: 5000,
   });
 
-  // Redirect non-admin teams to waiting page if game is not active
+  // Redirect non-admin teams based on game state
   useEffect(() => {
-    if (gameStatus && !gameStatus.is_active && !team?.is_admin) {
+    if (!gameStatus || team?.is_admin) return;
+    if (gameStatus.is_finished && gameStatus.join_code) {
+      navigate(`/results/${gameStatus.join_code}`, { replace: true });
+    } else if (!gameStatus.is_active) {
       navigate('/waiting');
     }
   }, [gameStatus, team, navigate]);
