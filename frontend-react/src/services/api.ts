@@ -76,13 +76,26 @@ class ApiClient {
     return localStorage.getItem('auth_token');
   }
 
+  private getMediaOrigin(): string {
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
+    if (apiBase.startsWith('/')) {
+      return window.location.origin;
+    }
+    try {
+      return new URL(apiBase).origin;
+    } catch {
+      return window.location.origin;
+    }
+  }
+
   private normalizeMediaUrl(url: string | null | undefined): string {
     if (!url || String(url).toLowerCase() === 'null') return '';
-    if (url.startsWith('/media/')) return url;
+    const origin = this.getMediaOrigin();
+    if (url.startsWith('/media/')) return `${origin}${url}`;
     try {
       const parsed = new URL(url);
       if (parsed.pathname.startsWith('/media/')) {
-        return parsed.pathname;
+        return `${origin}${parsed.pathname}`;
       }
     } catch {
       // Ignore parse errors and keep original value.
@@ -143,14 +156,19 @@ class ApiClient {
   }
 
   // Submissions endpoints
-  async createSubmission(areaId: number, text: string, score: number | null, files: File[]): Promise<Submission> {
+  async createSubmission(
+    areaId: number,
+    text: string,
+    score: number | null,
+    files: File[],
+    onUploadProgress?: (percent: number) => void,
+  ): Promise<Submission> {
     const formData = new FormData();
     formData.append('area_id', areaId.toString());
     formData.append('text', text);
     if (score !== null) {
       formData.append('score', score.toString());
     }
-    // Backend verwacht 'photos' en 'videos', niet 'media_files'
     files.forEach((file) => {
       if (file.type.startsWith('image/')) {
         formData.append('photos', file);
@@ -159,15 +177,16 @@ class ApiClient {
       }
     });
 
-    // For FormData uploads, use a separate axios instance without default JSON headers.
     const token = localStorage.getItem('auth_token');
-    const formUrl = API_BASE_URL.startsWith('http')
-      ? `${API_BASE_URL}/submissions/`
-      : `${API_BASE_URL}/submissions/`;
+    const formUrl = `${API_BASE_URL}/submissions/`;
     const formResponse = await axios.post(formUrl, formData, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: { 'Authorization': `Bearer ${token}` },
+      onUploadProgress: onUploadProgress
+        ? (e) => {
+            const pct = e.total ? Math.round((e.loaded * 100) / e.total) : 0;
+            onUploadProgress(pct);
+          }
+        : undefined,
     });
     return formResponse.data;
   }
@@ -296,6 +315,26 @@ class ApiClient {
     const response = await this.client.post(`/sessions/${sessionId}/start`, {
       additional_admin_team_ids: additionalAdminTeamIds,
     });
+    return response.data;
+  }
+
+  async extendSession(sessionId: number, minutes: number): Promise<{ message: string; new_end_time: string }> {
+    const response = await this.client.post(`/sessions/${sessionId}/extend`, { minutes });
+    return response.data;
+  }
+
+  async pauseSession(sessionId: number): Promise<{ message: string }> {
+    const response = await this.client.post(`/sessions/${sessionId}/pause`);
+    return response.data;
+  }
+
+  async resumeSession(sessionId: number): Promise<{ message: string; new_end_time: string }> {
+    const response = await this.client.post(`/sessions/${sessionId}/resume`);
+    return response.data;
+  }
+
+  async stopSession(sessionId: number): Promise<{ message: string }> {
+    const response = await this.client.post(`/sessions/${sessionId}/stop`);
     return response.data;
   }
 

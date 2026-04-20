@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import { apiClient } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../components/Toast';
 import 'leaflet/dist/leaflet.css';
 
 const Game: React.FC = () => {
@@ -13,8 +14,14 @@ const Game: React.FC = () => {
   const { team } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [selectedAreaId, setSelectedAreaId] = useState<number | null>(null);
   const assignmentFormRef = useRef<HTMLDivElement>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const isSubmittingRef = useRef(false);
+  // Live countdown: tick locally between server polls
+  const [localSecondsLeft, setLocalSecondsLeft] = useState<number>(0);
+  const prevSubmissionStatusRef = useRef<Record<number, string>>({});
 
   useEffect(() => {
     const handleSelectArea = (event: Event) => {
@@ -32,6 +39,7 @@ const Game: React.FC = () => {
       assignmentFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [selectedAreaId]);
+
   const [submissionText, setSubmissionText] = useState('');
   const [submissionScore, setSubmissionScore] = useState<number>(50);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
@@ -64,6 +72,19 @@ const Game: React.FC = () => {
     retry: 1,
   });
 
+  // Sync server remaining_seconds into local countdown; tick down locally between polls
+  useEffect(() => {
+    if (gameStatus?.remaining_seconds != null && !gameStatus.is_paused) {
+      setLocalSecondsLeft(gameStatus.remaining_seconds);
+    }
+  }, [gameStatus?.remaining_seconds, gameStatus?.is_paused]);
+
+  useEffect(() => {
+    if (!gameStatus?.is_active || gameStatus?.is_paused || gameStatus?.is_finished) return;
+    const id = setInterval(() => setLocalSecondsLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [gameStatus?.is_active, gameStatus?.is_paused, gameStatus?.is_finished]);
+
   // Fetch cooldowns for current team
   const { data: cooldowns = [] } = useQuery({
     queryKey: ['cooldowns'],
@@ -73,30 +94,56 @@ const Game: React.FC = () => {
     retry: false,
   });
 
+  // Poll own submissions to detect rejections and notify the team
+  const { data: mySubmissions = [] } = useQuery({
+    queryKey: ['mySubmissions'],
+    queryFn: () => apiClient.getMySubmissions(),
+    refetchInterval: 10000,
+    enabled: !!team?.game_session_id,
+  });
+
+  useEffect(() => {
+    if (mySubmissions.length === 0) return;
+    mySubmissions.forEach((sub: any) => {
+      const prev = prevSubmissionStatusRef.current[sub.id];
+      if (prev && prev !== sub.status && sub.status === 'REJECTED') {
+        showToast(`Inzending voor ${sub.area_name} is afgewezen`, 'error', 8000);
+      }
+      if (prev && prev !== sub.status && sub.status === 'APPROVED') {
+        showToast(`Inzending voor ${sub.area_name} is goedgekeurd!`, 'success', 6000);
+      }
+    });
+    const next: Record<number, string> = {};
+    mySubmissions.forEach((sub: any) => { next[sub.id] = sub.status; });
+    prevSubmissionStatusRef.current = next;
+  }, [mySubmissions, showToast]);
+
   // Mutations
   const submitMutation = useMutation({
     mutationFn: ({ areaId, text, score, files }: any) => {
-      return apiClient.createSubmission(areaId, text, score, files);
+      setUploadProgress(0);
+      return apiClient.createSubmission(areaId, text, score, files, (pct) => setUploadProgress(pct));
     },
     onSuccess: () => {
+      isSubmittingRef.current = false;
+      setUploadProgress(null);
       queryClient.invalidateQueries({ queryKey: ['areas'] });
       queryClient.invalidateQueries({ queryKey: ['cooldowns'] });
+      queryClient.invalidateQueries({ queryKey: ['mySubmissions'] });
       setSelectedAreaId(null);
       setSubmissionText('');
       setMediaFiles([]);
       setSubmissionScore(50);
       setError('');
-      alert('Inzending verstuurd! Wacht op goedkeuring van een admin.');
+      showToast('Inzending verstuurd! Wacht op goedkeuring van een admin.', 'success');
     },
     onError: (err: any) => {
-      console.error('Submission error:', err);
+      isSubmittingRef.current = false;
+      setUploadProgress(null);
       let errorMsg = 'Inzenden mislukt';
-      
-      // Handle FastAPI validation errors (array of error objects)
       if (err.response?.data?.detail) {
         const detail = err.response.data.detail;
         if (Array.isArray(detail)) {
-          // Validation errors - format them nicely
           errorMsg = detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ');
         } else if (typeof detail === 'string') {
           errorMsg = detail;
@@ -106,21 +153,20 @@ const Game: React.FC = () => {
       } else if (err.message) {
         errorMsg = err.message;
       }
-      
       setError(errorMsg);
-      alert('Fout: ' + errorMsg);
+      showToast('Fout: ' + errorMsg, 'error');
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAreaId) return;
+    if (isSubmittingRef.current) return;
 
-    // Require at least one photo or video for every submission
     const hasMedia = mediaFiles.length > 0;
     if (!hasMedia) {
       setError('Je moet minimaal een foto of video toevoegen');
-      alert('Je moet minimaal een foto of video toevoegen');
+      showToast('Je moet minimaal een foto of video toevoegen', 'warning');
       return;
     }
 
@@ -128,6 +174,7 @@ const Game: React.FC = () => {
       (f) => f.properties.id === selectedAreaId
     )?.properties;
 
+    isSubmittingRef.current = true;
     submitMutation.mutate({
       areaId: selectedAreaId,
       text: submissionText,
@@ -187,11 +234,13 @@ const Game: React.FC = () => {
     return [52.3676, 4.9041]; // Fallback to Amsterdam
   }, [areasData]);
 
-  // Calculate time remaining - MUST be before any conditional returns
-  const timeRemaining = gameStatus?.remaining_seconds || 0;
-  const hours = Math.floor(timeRemaining / 3600);
-  const minutes = Math.floor((timeRemaining % 3600) / 60);
-  const seconds = timeRemaining % 60;
+  // Use local countdown for smooth display
+  const displaySeconds = gameStatus?.is_paused
+    ? (gameStatus.remaining_seconds ?? 0)
+    : localSecondsLeft;
+  const hours = Math.floor(displaySeconds / 3600);
+  const minutes = Math.floor((displaySeconds % 3600) / 60);
+  const seconds = displaySeconds % 60;
   const areasRenderKey = useMemo(
     () =>
       areasData?.features
@@ -244,6 +293,52 @@ const Game: React.FC = () => {
         </div>
       </div>
 
+      {gameStatus?.is_paused && (
+        <div style={{
+          background: 'linear-gradient(135deg, #f7971e 0%, #ffd200 100%)',
+          color: '#333',
+          padding: '12px 20px',
+          borderRadius: '12px',
+          marginBottom: '12px',
+          textAlign: 'center',
+          fontWeight: 'bold',
+          fontSize: '1.05em',
+        }}>
+          ⏸ Spel is gepauzeerd — wacht op de admin
+        </div>
+      )}
+
+      {gameStatus?.is_finished && gameStatus.join_code && (
+        <div style={{
+          background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+          color: 'white',
+          padding: '16px 20px',
+          borderRadius: '12px',
+          marginBottom: '16px',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '1.4em', marginBottom: '6px' }}>🏁 Spel afgelopen!</div>
+          <div style={{ fontSize: '0.95em', marginBottom: '12px', opacity: 0.9 }}>
+            Bekijk de eindstand, het puntenverloop en alle ingezonden media.
+          </div>
+          <a
+            href={`/results/${gameStatus.join_code}`}
+            style={{
+              display: 'inline-block',
+              background: 'white',
+              color: '#11998e',
+              fontWeight: 'bold',
+              padding: '10px 24px',
+              borderRadius: '8px',
+              textDecoration: 'none',
+              fontSize: '1em',
+            }}
+          >
+            Bekijk eindoverzicht →
+          </a>
+        </div>
+      )}
+
       <MapContainer
         center={mapCenter}
         zoom={13}
@@ -266,11 +361,14 @@ const Game: React.FC = () => {
             onEachFeature={(feature, layer) => {
               const cooldownTime = getCooldownTime(feature.properties.id);
               const modeEmoji = feature.properties.challenge?.mode === 'LAST_APPROVED_WINS' ? '🏆' : '📊';
+              const rawDesc = feature.properties.challenge?.description || '';
+              const popupDesc = rawDesc.replace(/\s*\(https:\/\/maps\.google\.com\/[^)]+\)/g, '');
               const popupContent = `
                 <div style="min-width: 200px;">
                   <h4 style="margin: 0 0 8px 0;">${feature.properties.name}</h4>
                   <p style="margin: 4px 0;"><strong>Opdracht:</strong><br/>${feature.properties.challenge?.title || 'Geen opdracht'}</p>
-                  <p style="margin: 4px 0; font-size: 0.9em;">${feature.properties.challenge?.description || ''}</p>
+                  <p style="margin: 4px 0; font-size: 0.9em;">${popupDesc}</p>
+                  <p style="margin: 4px 0; font-size: 0.85em; color: #667eea;">📍 Tik op "Selecteer gebied" voor de locatie.</p>
                   <p style="margin: 4px 0;"><strong>Mode:</strong> ${modeEmoji} ${feature.properties.challenge?.mode === 'LAST_APPROVED_WINS' ? 'Laatst goedgekeurd wint' : 'Hoogste score wint'}</p>
                   ${feature.properties.ownership?.owner_team_name 
                     ? `<p style="margin: 4px 0;"><strong>Eigenaar:</strong> <span style="color: ${feature.properties.ownership.owner_team_color}; font-weight: bold;">${feature.properties.ownership.owner_team_name}</span></p>
@@ -298,38 +396,86 @@ const Game: React.FC = () => {
             const area = areasData?.features.find((f) => f.properties.id === selectedAreaId)?.properties;
             return (
               <>
-                <h3>Inzenden voor {area?.name}</h3>
-                <div className="area-challenge-info">
-                  <p className="challenge-text">
-                    <strong>Opdracht:</strong> {area?.challenge?.title || 'Geen opdracht'}
-                  </p>
-                  {area?.challenge?.description && (
-                    <p className="challenge-description" style={{ fontSize: '0.9em', whiteSpace: 'pre-wrap' }}
-                       dangerouslySetInnerHTML={{ __html: area.challenge.description.replace(/(https:\/\/maps\.google\.com\/[^\s)]+)/g, '<a href="$1" target="_blank" rel="noopener">📍 Open in Google Maps</a>') }} />
-                  )}
-                  <p className="challenge-mode">
-                    <strong>Mode:</strong>{' '}
-                    {area?.challenge?.mode === 'LAST_APPROVED_WINS'
-                      ? '🏆 Laatst goedgekeurd wint'
-                      : '📊 Hoogste score wint'}
-                  </p>
-                  {area?.ownership?.owner_team_name && (
-                    <p className="current-owner">
-                      <strong>Huidige eigenaar:</strong>{' '}
-                      <span style={{ color: area.ownership.owner_team_color || undefined }}>{area.ownership.owner_team_name}</span>
-                    </p>
-                  )}
-                  {area?.ownership?.owner_team_name && (
-                    <p className="current-owner">
-                      <strong>In bezit sinds:</strong> {formatOwnedTime(area.ownership.owned_seconds)}
-                    </p>
-                  )}
-                  {area?.ownership?.current_high_score !== null && area?.ownership && (
-                    <p className="top-score">
-                      <strong>Hoogste score:</strong> {area?.ownership.current_high_score} punten
-                    </p>
-                  )}
+                {/* Gebied + opdrachttitel in paarse header */}
+                <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', borderRadius: '12px', padding: '16px 20px', marginBottom: '0' }}>
+                  <div style={{ fontSize: '0.8em', opacity: 0.8, marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Geselecteerd gebied</div>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.3em' }}>{area?.name}</h3>
+                  <div style={{ fontWeight: 'bold', fontSize: '1.05em' }}>
+                    {area?.challenge?.title || 'Geen opdracht'}
+                  </div>
+                  <div style={{ marginTop: '8px', fontSize: '0.85em', opacity: 0.85 }}>
+                    <span>{area?.challenge?.mode === 'LAST_APPROVED_WINS' ? '🏆 Laatst goedgekeurd wint' : '📊 Hoogste score wint'}</span>
+                    {area?.ownership?.current_high_score != null && (
+                      <span style={{ marginLeft: '12px' }}>⭐ Top: {area.ownership.current_high_score} punten</span>
+                    )}
+                  </div>
                 </div>
+
+                {/* Prominent ownership badge */}
+                {area?.ownership?.owner_team_name ? (
+                  <div style={{
+                    background: area.ownership.owner_team_color,
+                    color: 'white',
+                    padding: '10px 20px',
+                    borderRadius: '0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '0.95em',
+                    fontWeight: 'bold',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                  }}>
+                    <span style={{ fontSize: '1.3em' }}>👑</span>
+                    <span>In bezit van {area.ownership.owner_team_name}</span>
+                    <span style={{ marginLeft: 'auto', fontWeight: 'normal', opacity: 0.9, fontSize: '0.88em' }}>
+                      {formatOwnedTime(area.ownership.owned_seconds)}
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{
+                    background: '#e8f5e9',
+                    color: '#2e7d32',
+                    padding: '8px 20px',
+                    fontSize: '0.88em',
+                    fontWeight: 'bold',
+                  }}>
+                    Nog geen eigenaar — wees de eerste!
+                  </div>
+                )}
+
+                {/* Beschrijving in apart wit blok eronder — donkere tekst voor leesbaarheid */}
+                {area?.challenge?.description && (() => {
+                  const desc = area.challenge.description;
+                  const urlMatch = desc.match(/https:\/\/maps\.google\.com\/[^\s)]+/);
+                  const mapsUrl = urlMatch ? urlMatch[0] : null;
+                  const cleanDesc = desc.replace(/\s*\(https:\/\/maps\.google\.com\/[^)]+\)/g, '');
+                  return (
+                    <div style={{ background: '#f8f9ff', border: '1px solid #e0e4ff', borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '14px 20px', marginBottom: '16px', fontSize: '0.95em', lineHeight: '1.6', color: '#333', whiteSpace: 'pre-wrap' }}>
+                      <span dangerouslySetInnerHTML={{ __html: cleanDesc }} />
+                      {mapsUrl && (
+                        <a
+                          href={mapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'block',
+                            marginTop: '14px',
+                            padding: '11px 16px',
+                            background: '#4285f4',
+                            color: 'white',
+                            borderRadius: '8px',
+                            textDecoration: 'none',
+                            fontWeight: 'bold',
+                            textAlign: 'center',
+                            fontSize: '0.95em',
+                          }}
+                        >
+                          📍 Open locatie in Google Maps
+                        </a>
+                      )}
+                    </div>
+                  );
+                })()}
           
                 {isCooldownActive(selectedAreaId) && (
                   <div style={{
@@ -405,15 +551,23 @@ const Game: React.FC = () => {
             <div className="form-group">
               <label>Foto's / Video's <span style={{color: 'red'}}>*</span></label>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                <label style={{ flex: 1 }}>
-                  <button type="button" className="btn-primary" style={{ width: '100%' }} onClick={() => photoCameraInputRef.current?.click()} disabled={isCooldownActive(selectedAreaId)}>
-                    Maak foto
-                  </button>
+                {/* Native label-activatie zodat Android capture="environment" correct werkt */}
+                <label
+                  style={{
+                    flex: 1,
+                    display: 'block',
+                    cursor: isCooldownActive(selectedAreaId) ? 'not-allowed' : 'pointer',
+                    pointerEvents: isCooldownActive(selectedAreaId) ? 'none' : 'auto',
+                  }}
+                >
+                  <span className="btn-primary" style={{ display: 'block', textAlign: 'center', opacity: isCooldownActive(selectedAreaId) ? 0.5 : 1 }}>
+                    📷 Maak foto
+                  </span>
                   <input
                     type="file"
                     accept="image/*"
                     capture="environment"
-                    style={{ display: 'none' }}
+                    style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden' }}
                     ref={photoCameraInputRef}
                     onChange={(e) => {
                       addMediaFiles(e.target.files);
@@ -422,15 +576,22 @@ const Game: React.FC = () => {
                     disabled={isCooldownActive(selectedAreaId)}
                   />
                 </label>
-                <label style={{ flex: 1 }}>
-                  <button type="button" className="btn-primary" style={{ width: '100%' }} onClick={() => videoCameraInputRef.current?.click()} disabled={isCooldownActive(selectedAreaId)}>
-                    Maak video
-                  </button>
+                <label
+                  style={{
+                    flex: 1,
+                    display: 'block',
+                    cursor: isCooldownActive(selectedAreaId) ? 'not-allowed' : 'pointer',
+                    pointerEvents: isCooldownActive(selectedAreaId) ? 'none' : 'auto',
+                  }}
+                >
+                  <span className="btn-primary" style={{ display: 'block', textAlign: 'center', opacity: isCooldownActive(selectedAreaId) ? 0.5 : 1 }}>
+                    🎥 Maak video
+                  </span>
                   <input
                     type="file"
                     accept="video/*"
                     capture="environment"
-                    style={{ display: 'none' }}
+                    style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden' }}
                     ref={videoCameraInputRef}
                     onChange={(e) => {
                       addMediaFiles(e.target.files);
@@ -439,15 +600,22 @@ const Game: React.FC = () => {
                     disabled={isCooldownActive(selectedAreaId)}
                   />
                 </label>
-                <label style={{ flex: 1 }}>
-                  <button type="button" className="btn-secondary" style={{ width: '100%' }} onClick={() => galleryInputRef.current?.click()} disabled={isCooldownActive(selectedAreaId)}>
+                <label
+                  style={{
+                    flex: 1,
+                    display: 'block',
+                    cursor: isCooldownActive(selectedAreaId) ? 'not-allowed' : 'pointer',
+                    pointerEvents: isCooldownActive(selectedAreaId) ? 'none' : 'auto',
+                  }}
+                >
+                  <span className="btn-secondary" style={{ display: 'block', textAlign: 'center', opacity: isCooldownActive(selectedAreaId) ? 0.5 : 1 }}>
                     🖼️ Kies uit galerij
-                  </button>
+                  </span>
                   <input
                     type="file"
                     accept="image/*,video/*"
                     multiple
-                    style={{ display: 'none' }}
+                    style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden' }}
                     ref={galleryInputRef}
                     onChange={(e) => {
                       addMediaFiles(e.target.files);
@@ -466,6 +634,24 @@ const Game: React.FC = () => {
 
             {error && <div className="error-message">{error}</div>}
 
+            {uploadProgress !== null && (
+              <div style={{ margin: '10px 0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                  <span>Uploaden...</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div style={{ background: '#e0e0e0', borderRadius: '6px', height: '8px', overflow: 'hidden' }}>
+                  <div style={{
+                    background: 'linear-gradient(90deg, #667eea, #764ba2)',
+                    height: '100%',
+                    width: `${uploadProgress}%`,
+                    transition: 'width 0.2s ease',
+                    borderRadius: '6px',
+                  }} />
+                </div>
+              </div>
+            )}
+
             <div className="form-actions">
               <button
                 type="button"
@@ -479,7 +665,7 @@ const Game: React.FC = () => {
                 className="btn-primary"
                 disabled={submitMutation.isPending || isCooldownActive(selectedAreaId)}
               >
-                {submitMutation.isPending ? 'Verzenden...' : 'Verzenden'}
+                {submitMutation.isPending ? `Verzenden${uploadProgress !== null ? ` (${uploadProgress}%)` : '...'}` : 'Verzenden'}
               </button>
             </div>
           </form>

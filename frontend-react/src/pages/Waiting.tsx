@@ -15,7 +15,6 @@ const Waiting: React.FC = () => {
   });
 
   useEffect(() => {
-    // Redirect to game when it becomes active
     if (gameStatus?.is_active) {
       navigate('/');
     }

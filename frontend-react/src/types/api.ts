@@ -29,6 +29,8 @@ export interface GameStatus {
   remaining_seconds: number | null;
   is_finished: boolean;
   can_submit: boolean;
+  join_code: string | null;
+  is_paused: boolean;
 }
 
 export interface Area {

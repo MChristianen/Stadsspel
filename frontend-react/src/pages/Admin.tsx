@@ -1,6 +1,7 @@
-﻿import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../services/api';
+import { useToast } from '../components/Toast';
 import type {
   City,
   CityPointsConfig,
@@ -12,6 +13,7 @@ import type {
 
 const Admin: React.FC = () => {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null);
   const [durationMinutes, setDurationMinutes] = useState(60);
@@ -21,6 +23,10 @@ const Admin: React.FC = () => {
   const [createdAdminAccounts, setCreatedAdminAccounts] = useState<CreatedAdminAccount[]>([]);
   const [configCityId, setConfigCityId] = useState<number | null>(null);
   const [pointsConfigDraft, setPointsConfigDraft] = useState<CityPointsConfig | null>(null);
+  const [extendMinutes, setExtendMinutes] = useState(10);
+  const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [rejectFeedback, setRejectFeedback] = useState('');
+  const prevSubmissionIdsRef = useRef<Set<number>>(new Set());
 
   const { data: allSessions = [] } = useQuery<SessionResponse[]>({
     queryKey: ['allSessions'],
@@ -45,7 +51,9 @@ const Admin: React.FC = () => {
       return;
     }
 
-    const activeSession = allSessions.find((s) => s.is_active && !s.is_finished);
+    const activeSession =
+      allSessions.find((s) => s.is_active && !s.is_finished) ||
+      allSessions.find((s) => !s.is_active && !s.is_finished);
     if (activeSession) {
       setCurrentSession(activeSession);
       setShowCreateForm(false);
@@ -101,6 +109,19 @@ const Admin: React.FC = () => {
     refetchInterval: 5000,
   });
 
+  // Notify admin when new pending submissions arrive
+  useEffect(() => {
+    if (submissions.length === 0) return;
+    const currentIds = new Set(submissions.map((s) => s.id));
+    if (prevSubmissionIdsRef.current.size > 0) {
+      const newOnes = submissions.filter((s) => !prevSubmissionIdsRef.current.has(s.id));
+      newOnes.forEach((s) =>
+        showToast(`Nieuwe inzending: ${s.team_name} — ${s.area_name}`, 'info', 6000)
+      );
+    }
+    prevSubmissionIdsRef.current = currentIds;
+  }, [submissions, showToast]);
+
   const { data: pendingCount } = useQuery({
     queryKey: ['pendingCount'],
     queryFn: () => apiClient.getPendingCount(),
@@ -145,6 +166,47 @@ const Admin: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameStatus'] });
     },
+  });
+
+  const extendMutation = useMutation({
+    mutationFn: ({ sessionId, minutes }: { sessionId: number; minutes: number }) =>
+      apiClient.extendSession(sessionId, minutes),
+    onSuccess: (_, { minutes }) => {
+      queryClient.invalidateQueries({ queryKey: ['gameStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['allSessions'] });
+      showToast(`Spel verlengd met ${minutes} minuten`, 'success');
+    },
+    onError: () => showToast('Verlengen mislukt', 'error'),
+  });
+
+  const pauseMutation = useMutation({
+    mutationFn: (sessionId: number) => apiClient.pauseSession(sessionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gameStatus'] });
+      showToast('Spel gepauzeerd', 'warning');
+    },
+    onError: () => showToast('Pauzeren mislukt', 'error'),
+  });
+
+  const resumeMutation = useMutation({
+    mutationFn: (sessionId: number) => apiClient.resumeSession(sessionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gameStatus'] });
+      showToast('Spel hervat', 'success');
+    },
+    onError: () => showToast('Hervatten mislukt', 'error'),
+  });
+
+  const stopMutation = useMutation({
+    mutationFn: (sessionId: number) => apiClient.stopSession(sessionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gameStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['allSessions'] });
+      setCurrentSession(null);
+      setShowCreateForm(true);
+      showToast('Spel gestopt', 'warning');
+    },
+    onError: () => showToast('Stoppen mislukt', 'error'),
   });
 
   const reviewMutation = useMutation({
@@ -331,7 +393,7 @@ const Admin: React.FC = () => {
     <div className="admin-container">
       <h1>Beheerpaneel</h1>
 
-      {showCreateForm && (
+      {(showCreateForm || !currentSession) && (
         <div className="admin-section">
           <h2>Nieuw Spel Aanmaken</h2>
           <div style={{ marginBottom: '20px' }}>
@@ -386,7 +448,16 @@ const Admin: React.FC = () => {
       {currentSession && (
         <>
           <div className="admin-section" style={{ background: '#e3f2fd', border: '2px solid #2196f3' }}>
-            <h2>Spel: {currentSession.city_name}</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <h2 style={{ margin: 0 }}>Spel: {currentSession.city_name}</h2>
+              <button
+                onClick={() => { setCurrentSession(null); setShowCreateForm(true); }}
+                className="btn-secondary"
+                style={{ fontSize: '13px', padding: '6px 12px', whiteSpace: 'nowrap' }}
+              >
+                + Nieuw spel
+              </button>
+            </div>
             <div style={{ marginBottom: '15px' }}>
               <p><strong>Speelduur:</strong> {currentSession.duration_minutes} minuten</p>
               <p>
@@ -426,7 +497,7 @@ const Admin: React.FC = () => {
 
             <div style={{ background: 'white', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
               <p style={{ marginBottom: '10px', fontWeight: 'bold' }}>Deel-link:</p>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
                 <input
                   type="text"
                   value={`${window.location.origin}/join/${currentSession.join_code}`}
@@ -442,6 +513,14 @@ const Admin: React.FC = () => {
                 <button onClick={copyJoinLink} className="btn-primary">
                   Kopieer
                 </button>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`${window.location.origin}/join/${currentSession.join_code}`)}&size=180x180&margin=6`}
+                  alt="QR code join link"
+                  style={{ borderRadius: '8px', border: '1px solid #eee' }}
+                />
+                <p style={{ fontSize: '12px', color: '#888', margin: '6px 0 0' }}>Scan om mee te doen</p>
               </div>
             </div>
 
@@ -465,6 +544,21 @@ const Admin: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {!currentSession.is_finished && (
+              <button
+                onClick={() => {
+                  if (window.confirm('Weet je zeker dat je het spel wilt stoppen? Dit kan niet ongedaan worden.')) {
+                    stopMutation.mutate(currentSession.id);
+                  }
+                }}
+                disabled={stopMutation.isPending}
+                className="btn-danger"
+                style={{ width: '100%', marginBottom: '12px', fontSize: '16px', padding: '12px' }}
+              >
+                ⏹ Spel stoppen
+              </button>
+            )}
 
             {!currentSession.is_active && !currentSession.is_finished && sessionTeams.length > 0 && (
               <div style={{ marginTop: '12px' }}>
@@ -495,6 +589,49 @@ const Admin: React.FC = () => {
                 >
                   Start Spel Nu
                 </button>
+              </div>
+            )}
+
+            {currentSession.is_active && !currentSession.is_finished && (
+              <div style={{ background: 'white', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
+                <p style={{ marginBottom: '10px', fontWeight: 'bold' }}>Tijdbeheer</p>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '10px' }}>
+                  {gameStatus?.is_paused ? (
+                    <button
+                      onClick={() => resumeMutation.mutate(currentSession.id)}
+                      disabled={resumeMutation.isPending}
+                      className="btn-primary"
+                    >
+                      ▶ Hervat spel
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => pauseMutation.mutate(currentSession.id)}
+                      disabled={pauseMutation.isPending}
+                      className="btn-secondary"
+                    >
+                      ⏸ Pauzeer spel
+                    </button>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    type="number"
+                    min="1"
+                    max="480"
+                    value={extendMinutes}
+                    onChange={(e) => setExtendMinutes(Number(e.target.value))}
+                    style={{ width: '70px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px' }}
+                  />
+                  <span style={{ fontSize: '14px' }}>minuten</span>
+                  <button
+                    onClick={() => extendMutation.mutate({ sessionId: currentSession.id, minutes: extendMinutes })}
+                    disabled={extendMutation.isPending}
+                    className="btn-secondary"
+                  >
+                    + Verleng tijd
+                  </button>
+                </div>
               </div>
             )}
 
@@ -706,16 +843,15 @@ const Admin: React.FC = () => {
                         return (
                           <div key={file.id} style={{ marginBottom: 8 }}>
                             <a href={file.url} target="_blank" rel="noopener noreferrer">
-                              <img src={file.url} alt={`media-${file.id}`} style={{ maxWidth: 200, maxHeight: 150, display: 'block', marginBottom: 2 }} />
+                              <img src={file.url} alt={`media-${file.id}`} style={{ maxWidth: 300, maxHeight: 200, display: 'block', marginBottom: 2 }} />
                             </a>
                           </div>
                         );
                       } else if (file.media_type === 'VIDEO' || file.media_type === 'video' || file.media_type.startsWith('video')) {
                         return (
                           <div key={file.id} style={{ marginBottom: 8 }}>
-                            <a href={file.url} target="_blank" rel="noopener noreferrer">
-                              <video src={file.url} controls style={{ maxWidth: 200, maxHeight: 150, display: 'block', marginBottom: 2 }} />
-                            </a>
+                            <video src={file.url} controls style={{ maxWidth: 300, maxHeight: 200, display: 'block', marginBottom: 2 }} />
+                            <a href={file.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#667eea' }}>Openen in nieuw tabblad</a>
                           </div>
                         );
                       } else {
@@ -737,16 +873,39 @@ const Admin: React.FC = () => {
                     Goedkeuren
                   </button>
                   <button
-                    onClick={() => {
-                      const feedback = prompt('Reden van afwijzing (optioneel):');
-                      reviewMutation.mutate({ id: submission.id, approved: false, feedback });
-                    }}
+                    onClick={() => { setRejectingId(submission.id); setRejectFeedback(''); }}
                     className="btn-danger"
                     disabled={reviewMutation.isPending}
                   >
                     Afkeuren
                   </button>
                 </div>
+                {rejectingId === submission.id && (
+                  <div style={{ marginTop: '10px', background: '#fff3f3', border: '1px solid #f5c6cb', borderRadius: '8px', padding: '12px' }}>
+                    <p style={{ margin: '0 0 8px', fontWeight: 'bold', fontSize: '14px' }}>Reden van afwijzing (optioneel):</p>
+                    <textarea
+                      value={rejectFeedback}
+                      onChange={(e) => setRejectFeedback(e.target.value)}
+                      rows={2}
+                      placeholder="Bijv. foto niet duidelijk genoeg..."
+                      style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '14px', boxSizing: 'border-box' }}
+                    />
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                      <button
+                        onClick={() => {
+                          reviewMutation.mutate({ id: submission.id, approved: false, feedback: rejectFeedback });
+                          setRejectingId(null);
+                          setRejectFeedback('');
+                        }}
+                        className="btn-danger"
+                        disabled={reviewMutation.isPending}
+                      >
+                        Bevestig afwijzing
+                      </button>
+                      <button onClick={() => setRejectingId(null)} className="btn-secondary">Annuleren</button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

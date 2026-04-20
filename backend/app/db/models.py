@@ -41,6 +41,7 @@ class GameSession(Base):
     started_at = Column(DateTime, nullable=True)  # When game was started
     end_time = Column(DateTime, nullable=True)  # Calculated: started_at + duration
     published_at = Column(DateTime, nullable=True)  # When results were published
+    paused_at = Column(DateTime, nullable=True)     # Set when game is paused; null = running
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     # Relationships

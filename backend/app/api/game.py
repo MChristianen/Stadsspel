@@ -25,6 +25,8 @@ class GameStatus(BaseModel):
     remaining_seconds: int | None = None
     is_finished: bool = False
     can_submit: bool = False
+    join_code: str | None = None
+    is_paused: bool = False
 
 
 class StartGameRequest(BaseModel):
@@ -60,8 +62,15 @@ def get_game_status(
         return GameStatus(is_active=False)
     
     now = datetime.utcnow()
-    is_finished = now >= session.end_time
-    time_remaining = max(0, (session.end_time - now).total_seconds())
+    is_paused = session.paused_at is not None
+
+    if is_paused:
+        # Remaining time is frozen at the moment of pause
+        time_remaining = max(0, (session.end_time - session.paused_at).total_seconds())
+        is_finished = False
+    else:
+        time_remaining = max(0, (session.end_time - now).total_seconds())
+        is_finished = now >= session.end_time
 
     # Auto-close and auto-export once session end time is reached.
     if is_finished and not session.is_finished:
@@ -69,7 +78,7 @@ def get_game_status(
         session.is_active = False
         db.commit()
         ensure_auto_export_for_session(db, session.id)
-    
+
     return GameStatus(
         is_active=True,
         start_time=session.started_at,
@@ -80,7 +89,9 @@ def get_game_status(
         city_name=session.city.name,
         remaining_seconds=int(time_remaining),
         is_finished=is_finished,
-        can_submit=(not is_finished and session.is_active)
+        can_submit=(not is_finished and session.is_active and not is_paused),
+        join_code=session.join_code,
+        is_paused=is_paused,
     )
 
 

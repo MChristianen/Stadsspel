@@ -128,7 +128,7 @@ const PublicResults: React.FC = () => {
                       {sub.media.map((m) => (
                         m.media_type === 'PHOTO' ? (
                           <a key={m.id} href={m.url} target="_blank" rel="noopener noreferrer">
-                            <img src={m.url} alt="media" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #eee' }} />
+                            <img src={m.url} alt="media" loading="lazy" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #eee' }} />
                           </a>
                         ) : (
                           <a key={m.id} href={m.url} target="_blank" rel="noopener noreferrer">

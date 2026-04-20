@@ -471,6 +471,100 @@ def start_session(
     }
 
 
+class ExtendSessionRequest(BaseModel):
+    minutes: int = Field(..., gt=0, le=480, description="Minutes to add (1-480)")
+
+
+@router.post("/{session_id}/extend")
+def extend_session(
+    session_id: int,
+    data: ExtendSessionRequest,
+    db: Session = Depends(get_db),
+    admin: Team = Depends(get_current_admin)
+):
+    """Add extra minutes to an active session's end time."""
+    session = db.query(GameSession).filter(GameSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if not session.is_active or session.is_finished:
+        raise HTTPException(status_code=400, detail="Session is not active")
+
+    session.end_time = session.end_time + timedelta(minutes=data.minutes)
+    db.commit()
+    logger.info(f"Extended session {session.id} by {data.minutes} minutes")
+    return {"message": f"Verlengd met {data.minutes} minuten", "new_end_time": session.end_time}
+
+
+@router.post("/{session_id}/pause")
+def pause_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    admin: Team = Depends(get_current_admin)
+):
+    """Pause an active session, freezing the countdown clock."""
+    session = db.query(GameSession).filter(GameSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if not session.is_active or session.is_finished:
+        raise HTTPException(status_code=400, detail="Session is not active")
+    if session.paused_at is not None:
+        raise HTTPException(status_code=400, detail="Session is already paused")
+
+    session.paused_at = datetime.utcnow()
+    db.commit()
+    logger.info(f"Paused session {session.id}")
+    return {"message": "Spel gepauzeerd"}
+
+
+@router.post("/{session_id}/resume")
+def resume_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    admin: Team = Depends(get_current_admin)
+):
+    """Resume a paused session, shifting end_time by the paused duration."""
+    session = db.query(GameSession).filter(GameSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.paused_at is None:
+        raise HTTPException(status_code=400, detail="Session is not paused")
+
+    paused_duration = datetime.utcnow() - session.paused_at
+    session.end_time = session.end_time + paused_duration
+    session.paused_at = None
+    db.commit()
+    logger.info(f"Resumed session {session.id}")
+    return {"message": "Spel hervat", "new_end_time": session.end_time}
+
+
+@router.post("/{session_id}/stop")
+def stop_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    admin: Team = Depends(get_current_admin)
+):
+    """Stop a session immediately — works before and during a game."""
+    session = db.query(GameSession).filter(GameSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.is_finished:
+        raise HTTPException(status_code=400, detail="Session is already finished")
+
+    was_started = session.started_at is not None
+    session.is_active = False
+    session.is_finished = True
+    session.paused_at = None
+    if not was_started:
+        session.end_time = datetime.utcnow()
+    db.commit()
+
+    if was_started:
+        ensure_auto_export_for_session(db, session.id)
+
+    logger.info(f"Admin stopped session {session.id} (was_started={was_started})")
+    return {"message": "Spel gestopt"}
+
+
 @router.delete("/{session_id}")
 def delete_session(
     session_id: int,

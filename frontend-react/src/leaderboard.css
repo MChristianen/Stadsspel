@@ -51,13 +51,24 @@
   white-space: nowrap;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 480px) {
+  .scoreboard-container {
+    padding: 0.5rem;
+  }
+
   .scoreboard-row {
-    font-size: 0.9rem;
-    padding: 0.4rem 0.5rem;
+    grid-template-columns: 2em 1.2em 1fr;
+    grid-template-rows: auto auto;
+    font-size: 0.88rem;
+    padding: 0.5rem 0.6rem;
+    gap: 0.2rem 0.4rem;
   }
 
   .scoreboard-summary {
-    font-size: 0.86em;
+    grid-column: 1 / -1;
+    font-size: 0.8em;
+    white-space: normal;
+    color: #888;
+    padding-left: 0.2em;
   }
 }

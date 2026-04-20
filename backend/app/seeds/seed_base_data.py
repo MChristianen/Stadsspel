@@ -278,9 +278,9 @@ CITY_DATA = [
                     (-9.206172, 38.713376), (-9.209777, 38.719001)
                 ],
                 "challenge": {
-                    "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Pastéis de Belém",
-                    "description": "📸 Ga naar misschien wel de bekendste bakker van Portugal, Pastéis de Belém. Sinds 1837 wordt hier volgens een geheim recept dé originele pastel de nata gemaakt, waar mensen van over de hele wereld voor in de rij staan. Bestel hier allebei hun specialiteit en proef zelf waarom dit zo beroemd is (minimaal 1 per persoon dus, meer mag!). Laat het smaken! 📍 Pastéis de Belém, Rua de Belém 84 (https://maps.google.com/?q=38.6976,-9.2034)",
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Pastéis de nata bij Pastéis de Belém",
+                    "description": "📸 Ga naar misschien wel de bekendste bakker van Portugal, Pastéis de Belém. Sinds 1837 wordt hier volgens een geheim recept dé originele pastel de nata gemaakt, waar mensen van over de hele wereld voor in de rij staan. Bestel zoveel pastéis de nata als jullie aankunnen en eet ze ter plekke op. Jullie score = het totale aantal pastéis de nata dat jullie samen hebben gegeten. Meer is beter! 📍 Pastéis de Belém, Rua de Belém 84 (https://maps.google.com/?q=38.6976,-9.2034)",
                 },
             },
             {
@@ -293,7 +293,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Praça Martim Moniz",
+                    "title": "Tram 28 rit",
                     "description": "🎬 Maak een tramrit met de beroemde tramlijn 28, dé klassieke gele tram die zich een weg baant door de smalle straatjes van het oude Lissabon. Ga hiervoor naar het beginpunt van deze tramlijn: Praça Martim Moniz. Zoek de opstapplaats en film julliezelf bij het instappen en film julliezelf bij het uitstappen. Het uitstappen doe je bij R. Graça (Rua da Graça). Zorg dat je onderweg ook nog een beetje overeind blijft in die bochten :) 📍 Praça Martim Moniz (https://maps.google.com/?q=38.7155,-9.1368)",
                 },
             },
@@ -306,7 +306,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Pink Street (Rua Cor de Rosa)",
+                    "title": "Biertje in Pink Street",
                     "description": "🎬 Bezoek één van de bars in Pink Street (Rua Cor de Rosa), dé uitgaansstraat van Lissabon die bekendstaat om zijn felroze wegdek en kleurrijke paraplu's boven de straat. Bestel allebei een biertje, ad deze leeg en film dit met op de achtergrond de prachtige paraplu's. Even die keel openzetten mannen ;) 📍 Pink Street, Rua Nova do Carvalho (https://maps.google.com/?q=38.7068,-9.1449)",
                 },
             },
@@ -319,9 +319,9 @@ CITY_DATA = [
                     (-9.174421, 38.712572)
                 ],
                 "challenge": {
-                    "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Mercado de Campo de Ourique",
-                    "description": "🎬 Tijd om wat te drinken! Bezoek het Mercado de Campo de Ourique, een geliefde food market onder locals waar je vooral veel Portugezen zelf vindt in plaats van toeristen. Bestel ieder een glas wijn bij één van de kraampjes en ad beide jullie glas leeg. Proost op Lissabon en op de punten! 📍 Mercado de Campo de Ourique (https://maps.google.com/?q=38.7193,-9.1625)",
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Wijn bij Mercado de Campo de Ourique",
+                    "description": "🎬 Tijd om wat te drinken! Bezoek het Mercado de Campo de Ourique, een geliefde food market onder locals waar je vooral veel Portugezen zelf vindt in plaats van toeristen. Jullie score = het totale aantal glazen wijn dat jullie samen drinken bij één van de kraampjes. Elk leeg glas telt, dus proef maar stevig door! Proost op Lissabon en op de punten! 📍 Mercado de Campo de Ourique (https://maps.google.com/?q=38.7193,-9.1625)",
                 },
             },
             {
@@ -334,7 +334,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Avenida da Liberdade",
+                    "title": "Pashokje op Avenida da Liberdade",
                     "description": "📸 In deze wijk bevindt zich de Champs-Élysées van Lissabon: de Avenida da Liberdade, een statige boulevard vol luxe winkels en internationale modehuizen. Dat wordt shoppen dus! Ga naar één van de volgende winkels: Louis Vuitton, Prada, Gucci, Hugo Boss of Armani. Trek iets van bovenkleding aan van één van deze winkels en laat jezelf fotograferen door de ander. Let op: doe dit in de winkel zelf en niet in een pashokje! 📍 Avenida da Liberdade (https://maps.google.com/?q=38.7197,-9.1451)",
                 },
             },
@@ -348,7 +348,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Prazeres Cemetery Lisbon",
+                    "title": "Kruisje bij Prazeres Cemetery",
                     "description": "🎬 Ga naar het Prazeres Cemetery Lisbon. Ondanks de wat dode uitstraling is dit een bijzondere plek, waar veel bekende Portugezen begraven liggen en het bijna aanvoelt als een openluchtmuseum. Loop naar de centrale kapel (Capela do Cemitério dos Prazeres), sla een kruisje en zeg de laatste zinnen van het gebed: \"In de Naam van de Vader, de Zoon en de heilige Geest. Amen\". 📍 Cemitério dos Prazeres (https://maps.google.com/?q=38.7143,-9.1644)",
                 },
             },
@@ -363,7 +363,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "LX Factory",
+                    "title": "Poseertijd bij LX Factory",
                     "description": "🎬 De LX Factory is een oude industriële fabriek die is omgetoverd tot een levendige hotspot vol hippe barretjes, creatieve winkels en indrukwekkende street art. Struin hier rond, kies een standbeeld of artwork met een persoon en ga ervoor staan. Laat één van jullie precies dezelfde houding aannemen als het persoon van dit kunstwerk en leg dit vast op foto. Hoe overtuigender (of juist ongemakkelijker), hoe beter! 📍 LX Factory, Rua Rodrigues de Faria 103 (https://maps.google.com/?q=38.7033,-9.1783)",
                 },
             },
@@ -377,9 +377,9 @@ CITY_DATA = [
                     (-9.188838, 38.710429), (-9.195531, 38.715653), (-9.19227, 38.725028)
                 ],
                 "challenge": {
-                    "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Jardim Botânico d'Ajuda",
-                    "description": "🎬 Ga naar de Jardim Botânico d'Ajuda. Een prachtige Botanische tuin met de herkenbare symmetrische trap. Zorg dat één van jullie binnen 20 seconden van onderaan de trap naar boven rent, en via de andere traptredes weer terug beneden komt. Doe dit met de klok mee of tegen de klok in, net wat je wilt. Maar doe het in ieder geval binnen de tijd! Je begint voor de trap op het zand en de tijd eindig pas zodra je de trap weer af bent. 📍 Jardim Botânico d'Ajuda (https://maps.google.com/?q=38.7046,-9.1977)",
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Trap-challenge bij Jardim Botânico d'Ajuda",
+                    "description": "🎬 Ga naar de Jardim Botânico d'Ajuda. Een prachtige Botanische tuin met de herkenbare symmetrische trap. Doe de trap-challenge: ren in 60 seconden zo vaak mogelijk van onderaan naar boven en weer terug. Jullie score = het aantal complete rondes (omhoog én omlaag) dat één persoon haalt in 60 seconden. De andere persoon filmt en telt. Je begint voor de trap op het zand. Elke complete ronde telt als 1 punt. 📍 Jardim Botânico d'Ajuda (https://maps.google.com/?q=38.7046,-9.1977)",
                 },
             },
             {
@@ -392,7 +392,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Miradouro da Senhora do Monte",
+                    "title": "Zoen bij Miradouro da Senhora do Monte",
                     "description": "📸 Ga naar het bekendste en mooiste uitzichtpunt van Lissabon: Miradouro da Senhora do Monte. Dit is één van de hoogste punten van de stad en biedt een panoramisch uitzicht over bijna heel Lissabon, inclusief het kasteel en de Taag. Dit is pas een romantische plek! Laat een voorbijganger een foto maken van jullie op dit uitzichtspunt. Omdat het zo'n romantische plek is staan jullie zoenend op de foto :) 📍 Miradouro da Senhora do Monte (https://maps.google.com/?q=38.7196,-9.1310)",
                 },
             },
@@ -407,7 +407,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Miradouro da Penha de França",
+                    "title": "Titanic bij Miradouro da Penha de França",
                     "description": "📸 Een vooral rustige wijk met niet heel veel bezienswaardigheden, maar juist daardoor een plek waar je het echte Lissabon ervaart. Het bekendste punt is misschien wel Miradouro da Penha de França, een uitzichtpunt met een prachtig zicht over de stad. Zoek dit uitzichtspunt en laat een voorbijganger een foto maken van jullie twee waarbij jullie de romantische houding van de Titanic nadoen met het gezicht richting de stad. Miradouro da Penha de França is ook te herkennen aan het ronde torenvormige gebouw. 📍 Miradouro da Penha de França (https://maps.google.com/?q=38.7266,-9.1248)",
                 },
             },
@@ -421,7 +421,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Street Workout, Vale Chelas",
+                    "title": "Ondersteboven in Beato",
                     "description": "📸 Tussen de straten Impasse Rua C (56 Vale Chelas) en Rua General Vassalo Silva vind je 'Street workout'. Deze plekken zijn onderdeel van de opkomende urban sports scene in Lissabon, waar locals hun kracht en skills trainen in de buitenlucht. Je herkent deze aan de groene stangen op de zwarte palen. Eén van jullie: ga ondersteboven aan één van deze stangen hangen. Blijf hangen alsof je dit dagelijks doet :) 📍 Impasse Rua C, Vale Chelas (https://maps.google.com/?q=38.7310,-9.1140)",
                 },
             },
@@ -433,9 +433,9 @@ CITY_DATA = [
                     (-9.130311, 38.749532), (-9.122073, 38.737883), (-9.101477, 38.730117)
                 ],
                 "challenge": {
-                    "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Dois Corvos Marvila Taproom",
-                    "description": "📸 Bezoek Dois Corvos Marvila Taproom, een lokale bierbrouwerij waar ze hun eigen craft bier brouwen en waar liefhebbers samenkomen om nieuwe smaken te ontdekken. Bestel ieder 2 biertjes van de brouwerij zelf. Tip: houd rekening met de openingstijden. Saúde! 📍 Dois Corvos Marvila Taproom (https://maps.google.com/?q=38.7420,-9.1045)",
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Craft bier bij Dois Corvos Marvila",
+                    "description": "📸 Bezoek Dois Corvos Marvila Taproom, een lokale bierbrouwerij waar ze hun eigen craft bier brouwen en waar liefhebbers samenkomen om nieuwe smaken te ontdekken. Jullie score = het totale aantal verschillende craft bieren van de brouwerij dat jullie samen proeven. Hoe meer smaken, hoe hoger de score! Tip: houd rekening met de openingstijden. Saúde! 📍 Dois Corvos Marvila Taproom (https://maps.google.com/?q=38.7420,-9.1045)",
                 },
             },
             {
@@ -448,7 +448,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Oriente",
+                    "title": "Drankje bij Oriente",
                     "description": "📸 We zijn weer terug op Oriente, het moderne deel van Lissabon dat bekendstaat om zijn strakke architectuur en het grote treinstation Gare do Oriente. Bestel hetzelfde drankje bij dezelfde tent als gisteren. Als jullie het nog weten tenminste! 📍 Gare do Oriente (https://maps.google.com/?q=38.7679,-9.0990)",
                 },
             },
@@ -464,7 +464,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Quinta Pedagógica dos Olivais",
+                    "title": "Dier aaien bij Quinta Pedagógica dos Olivais",
                     "description": "📸 Bezoek een van de weinige plekken in Lissabon waar je echt een stukje platteland midden in de stad ervaart: de kinderboerderij Quinta Pedagógica dos Olivais. Aai één van de dieren en leg dit op foto vast alsof je dit ook echt leuk vindt :) 📍 Quinta Pedagógica dos Olivais (https://maps.google.com/?q=38.7668,-9.1168)",
                 },
             },
@@ -478,7 +478,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Santo António",
+                    "title": "Rij van groot naar klein bij Santo António",
                     "description": "📸 In deze typisch Portugese wijk, bekend om zijn smalle straatjes en jaarlijkse feestjes tijdens de Festas de Santo António, draait alles om sfeer, muziek en gezelligheid. Ga naar het Santo António beeld en zet 3 voorbijgangers van groot naar klein op een rij met het beeld op de achtergrond. Let op: jullie zelf mogen niet op de foto staan! 📍 Santo António, Alvalade (https://maps.google.com/?q=38.7520,-9.1465)",
                 },
             },
@@ -492,9 +492,9 @@ CITY_DATA = [
                     (-9.170302, 38.741231), (-9.165324, 38.744176), (-9.172876, 38.755957)
                 ],
                 "challenge": {
-                    "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Benfica stadion",
-                    "description": "🎬 Het Estádio da Luz, ook wel \"Stadium of Light\" of \"A Catedral\" genoemd, is het grootste voetbalstadion van Portugal! Laat zien dat je balgevoel niet alleen met een bal werkt! Houd 5x hoog met een willekeurig voorwerp met het Benfica stadion op de achtergrond. De ander filmt deze technische kunsten :) 📍 Estádio da Luz (https://maps.google.com/?q=38.7527,-9.1847)",
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Hoog houden bij Estádio da Luz",
+                    "description": "🎬 Het Estádio da Luz, ook wel \"Stadium of Light\" of \"A Catedral\" genoemd, is het grootste voetbalstadion van Portugal! Laat zien wat je balgevoel waard is: houd zo vaak mogelijk hoog met een willekeurig voorwerp met het Benfica stadion op de achtergrond. Jullie score = het aantal keer hoog houden zonder dat het voorwerp de grond raakt van één persoon. De ander filmt en telt. 📍 Estádio da Luz (https://maps.google.com/?q=38.7527,-9.1847)",
                 },
             },
             {
@@ -506,9 +506,9 @@ CITY_DATA = [
                     (-9.136413, 38.718265)
                 ],
                 "challenge": {
-                    "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Fonte Luminosa",
-                    "description": "🎬 Ga naar het Fonte Luminosa en doe een wens! Deze indrukwekkende fontein staat bekend om zijn lichtshows en werd ooit gebouwd als symbool van modern Lissabon. Gooi wat kleingeld in de fontein en zeg hardop een wens naar keuze. Wie weet komt 'ie hier echt uit! We willen de wens natuurlijk wel horen ;) 📍 Fonte Luminosa, Alameda Dom Afonso Henriques (https://maps.google.com/?q=38.7275,-9.1456)",
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Wens bij Fonte Luminosa",
+                    "description": "🎬 Ga naar het Fonte Luminosa en gooi zoveel munten als jullie willen in de fontein! Deze indrukwekkende fontein staat bekend om zijn lichtshows en werd ooit gebouwd als symbool van modern Lissabon. Jullie score = het totale aantal muntstukken dat jullie samen in de fontein gooien. Voor elk muntje moet je hardop een unieke wens uitspreken — die wensen willen we horen op de video! 📍 Fonte Luminosa, Alameda Dom Afonso Henriques (https://maps.google.com/?q=38.7275,-9.1456)",
                 },
             },
             {
@@ -521,9 +521,9 @@ CITY_DATA = [
                     (-9.157781, 38.729849), (-9.153318, 38.724961), (-9.174687, 38.722952)
                 ],
                 "challenge": {
-                    "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Aqueduto das Águas Livres",
-                    "description": "🎬 Doe de bottle flip challenge met een flesje naar keuze met het Aqueduto das Águas Livres op de achtergrond. Dit indrukwekkende aquaduct uit de 18e eeuw overleefde zelfs de grote aardbeving van 1755 en is nog steeds één van de iconen van de stad. Jullie bepalen zelf waar je dit doet, zolang je maar het Aqueduto das Águas Livres op de achtergrond hebt. Alleen tellen als hij in één keer perfect landt :) 📍 Aqueduto das Águas Livres (https://maps.google.com/?q=38.7323,-9.1700)",
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Bottle flip bij het Aqueduto das Águas Livres",
+                    "description": "🎬 Doe de bottle flip challenge met een flesje naar keuze met het Aqueduto das Águas Livres op de achtergrond. Dit indrukwekkende aquaduct uit de 18e eeuw overleefde zelfs de grote aardbeving van 1755 en is nog steeds één van de iconen van de stad. Jullie score = het aantal geslaagde bottle flips dat één persoon haalt in 60 seconden. Alleen een perfecte landing telt! De ander filmt en telt. Jullie bepalen zelf waar je staat, zolang het aquaduct maar op de achtergrond zichtbaar is. 📍 Aqueduto das Águas Livres (https://maps.google.com/?q=38.7323,-9.1700)",
                 },
             },
             {
@@ -537,7 +537,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Parque Eduardo VII",
+                    "title": "Selfie bij Parque Eduardo VII",
                     "description": "📸 Bezoek het toppunt van Parque Eduardo VII bovenaan. Vanaf dit hoogste punt heb je één van de strakste uitzichten van Lissabon, met het park dat perfect symmetrisch naar beneden loopt richting de stad. Ga achter de Portugese vlag staan en maak een selfie van jullie twee. Op de achtergrond zie je dan de vlag en het park helemaal naar beneden lopen. Tip: zoek naar Miradouro do Parque Eduardo VII en je ziet de enorme Portugese vlag vanzelf. 📍 Miradouro do Parque Eduardo VII (https://maps.google.com/?q=38.7285,-9.1525)",
                 },
             },
@@ -552,7 +552,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Jardim Fernando Pessoa",
+                    "title": "Fiets bij Jardim Fernando Pessoa",
                     "description": "📸 In het Jardim Fernando Pessoa vind je verschillende standbeelden die het dagelijks leven in Lissabon uitbeelden. Zoek het beeld van de twee personen met de fiets. Eén van jullie: ga achterop de fiets van dit standbeeld zitten en zorg dat je er niet vanaf valt! Doe je armen veilig om het middel van de fietser heen! 📍 Jardim Fernando Pessoa (https://maps.google.com/?q=38.7415,-9.1330)",
                 },
             },
@@ -570,7 +570,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Portas Benfica",
+                    "title": "Op de nek bij Portas Benfica",
                     "description": "📸 Vind de rode Portas Benfica. De naam betekent letterlijk \"Poorten van Benfica\" en het was vroeger een toegangspunt tot het oude dorp Benfica, toen Lissabon nog een stuk kleiner was. Laat een voorbijganger een foto maken van jullie waarbij de één bij de ander achterop z'n nek zit, met de Portas Benfica op de achtergrond. Hoe stabieler jullie blijven zitten, hoe beter de foto ;) 📍 Portas de Benfica (https://maps.google.com/?q=38.7440,-9.1710)",
                 },
             },
@@ -588,7 +588,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Coreto de Carnide",
+                    "title": "Volkslied bij Coreto de Carnide",
                     "description": "🎬 Zing een deel van het eerste refrein van het Portugese volkslied op het Coreto de Carnide in het Portugees (5 zinnen: begin met \"Às armas, às armas!\"). Dit klassieke muziekpaviljoen is al jarenlang een plek waar locals samenkomen voor muziek en optredens in de wijk. Laat iedereen horen hoe overtuigend en vol passie je het volkslied zingt! De andere persoon filmt deze geweldige scène door voor het bouwwerk te staan. 📍 Coreto de Carnide (https://maps.google.com/?q=38.7639,-9.1855)",
                 },
             },
@@ -603,7 +603,7 @@ CITY_DATA = [
                 ],
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Ponto de Aviões",
+                    "title": "Vliegtuig selfie bij Ponto de Aviões",
                     "description": "📸 Vliegtuig spotten! Ga naar de beroemde spotlocatie Ponto de Aviões, vlakbij de landingsbaan van het vliegveld, waar vliegtuigen van heel dichtbij over je heen denderen. Maak een prachtige selfie van jullie beide met op de achtergrond een opstijgend of landend vliegtuig. Timing is alles, dus kies je moment goed! 📍 Ponto de Aviões (https://maps.google.com/?q=38.7750,-9.1350)",
                 },
             },
@@ -618,9 +618,9 @@ CITY_DATA = [
                     (-9.175969, 38.779514), (-9.176656, 38.784599)
                 ],
                 "challenge": {
-                    "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Parque das Conchas",
-                    "description": "📸 Ga naar het lokale Parque das Conchas e dos Lilases, een rustig park waar vooral buurtbewoners komen om te wandelen en hun honden uit te laten. Ga met z'n tweeën met een hond op de foto en zorg dat jullie allebei samen op één foto staan, uiteraard mét de hond. Woef! Flits! 📍 Parque das Conchas e dos Lilases (https://maps.google.com/?q=38.7687,-9.1610)",
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Honden bij Parque das Conchas",
+                    "description": "📸 Ga naar het lokale Parque das Conchas e dos Lilases, een rustig park waar vooral buurtbewoners komen om te wandelen en hun honden uit te laten. Jullie score = het totale aantal verschillende honden waarmee jullie samen op de foto gaan. Elke hond telt, maar elke foto moet een andere hond zijn! Woef! Flits! 📍 Parque das Conchas e dos Lilases (https://maps.google.com/?q=38.7687,-9.1610)",
                 },
             },
         ],
