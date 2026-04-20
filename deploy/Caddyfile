@@ -10,6 +10,19 @@
         file_server
     }
 
+    # Service worker en index.html nooit cachen
+    handle /sw.js {
+        root * /srv/frontend
+        file_server
+        header Cache-Control "no-store, no-cache, must-revalidate"
+    }
+
+    handle /index.html {
+        root * /srv/frontend
+        file_server
+        header Cache-Control "no-store, no-cache, must-revalidate"
+    }
+
     # Alles anders → React frontend
     handle {
         root * /srv/frontend
