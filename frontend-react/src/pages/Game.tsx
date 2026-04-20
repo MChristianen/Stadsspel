@@ -550,84 +550,80 @@ const Game: React.FC = () => {
 
             <div className="form-group">
               <label>Foto's / Video's <span style={{color: 'red'}}>*</span></label>
+              {/* Hidden inputs — triggered programmatically via ref.current.click() from button onClick */}
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                style={{ display: 'none' }}
+                ref={photoCameraInputRef}
+                onChange={(e) => { addMediaFiles(e.target.files); e.target.value = ''; }}
+              />
+              <input
+                type="file"
+                accept="video/*"
+                capture="environment"
+                style={{ display: 'none' }}
+                ref={videoCameraInputRef}
+                onChange={(e) => { addMediaFiles(e.target.files); e.target.value = ''; }}
+              />
+              <input
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                style={{ display: 'none' }}
+                ref={galleryInputRef}
+                onChange={(e) => { addMediaFiles(e.target.files); e.target.value = ''; }}
+              />
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                {/* Native label-activatie zodat Android capture="environment" correct werkt */}
-                <label
-                  style={{
-                    flex: 1,
-                    display: 'block',
-                    cursor: isCooldownActive(selectedAreaId) ? 'not-allowed' : 'pointer',
-                    pointerEvents: isCooldownActive(selectedAreaId) ? 'none' : 'auto',
-                  }}
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ flex: 1 }}
+                  disabled={isCooldownActive(selectedAreaId)}
+                  onClick={() => photoCameraInputRef.current?.click()}
                 >
-                  <span className="btn-primary" style={{ display: 'block', textAlign: 'center', opacity: isCooldownActive(selectedAreaId) ? 0.5 : 1 }}>
-                    📷 Maak foto
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden' }}
-                    ref={photoCameraInputRef}
-                    onChange={(e) => {
-                      addMediaFiles(e.target.files);
-                      e.target.value = '';
-                    }}
-                    disabled={isCooldownActive(selectedAreaId)}
-                  />
-                </label>
-                <label
-                  style={{
-                    flex: 1,
-                    display: 'block',
-                    cursor: isCooldownActive(selectedAreaId) ? 'not-allowed' : 'pointer',
-                    pointerEvents: isCooldownActive(selectedAreaId) ? 'none' : 'auto',
-                  }}
+                  📷 Maak foto
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ flex: 1 }}
+                  disabled={isCooldownActive(selectedAreaId)}
+                  onClick={() => videoCameraInputRef.current?.click()}
                 >
-                  <span className="btn-primary" style={{ display: 'block', textAlign: 'center', opacity: isCooldownActive(selectedAreaId) ? 0.5 : 1 }}>
-                    🎥 Maak video
-                  </span>
-                  <input
-                    type="file"
-                    accept="video/*"
-                    capture="environment"
-                    style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden' }}
-                    ref={videoCameraInputRef}
-                    onChange={(e) => {
-                      addMediaFiles(e.target.files);
-                      e.target.value = '';
-                    }}
-                    disabled={isCooldownActive(selectedAreaId)}
-                  />
-                </label>
-                <label
-                  style={{
-                    flex: 1,
-                    display: 'block',
-                    cursor: isCooldownActive(selectedAreaId) ? 'not-allowed' : 'pointer',
-                    pointerEvents: isCooldownActive(selectedAreaId) ? 'none' : 'auto',
-                  }}
+                  🎥 Maak video
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ flex: 1 }}
+                  disabled={isCooldownActive(selectedAreaId)}
+                  onClick={() => galleryInputRef.current?.click()}
                 >
-                  <span className="btn-secondary" style={{ display: 'block', textAlign: 'center', opacity: isCooldownActive(selectedAreaId) ? 0.5 : 1 }}>
-                    🖼️ Kies uit galerij
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*,video/*"
-                    multiple
-                    style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden' }}
-                    ref={galleryInputRef}
-                    onChange={(e) => {
-                      addMediaFiles(e.target.files);
-                      e.target.value = '';
-                    }}
-                    disabled={isCooldownActive(selectedAreaId)}
-                  />
-                </label>
+                  🖼️ Kies uit galerij
+                </button>
               </div>
-              {mediaFiles.length > 0 && (
-                <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-                  {mediaFiles.length} bestand(en) geselecteerd
+              {mediaFiles.length > 0 ? (
+                <div style={{ fontSize: '13px', color: '#444', marginTop: '4px' }}>
+                  <strong>{mediaFiles.length} bestand(en) toegevoegd:</strong>
+                  <ul style={{ margin: '4px 0 0 0', paddingLeft: '18px' }}>
+                    {mediaFiles.map((f, i) => (
+                      <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>{f.type.startsWith('video/') ? '🎥' : '📷'} {f.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setMediaFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                          style={{ background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontSize: '14px', padding: '0' }}
+                        >✕</button>
+                      </li>
+                    ))}
+                  </ul>
+                  <p style={{ margin: '4px 0 0 0', color: '#666' }}>Druk nogmaals op een knop om meer toe te voegen.</p>
+                </div>
+              ) : (
+                <p style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                  Je kunt meerdere foto's en video's toevoegen aan één inzending.
                 </p>
               )}
             </div>
