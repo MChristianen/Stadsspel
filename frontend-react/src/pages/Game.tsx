@@ -311,36 +311,6 @@ const Game: React.FC = () => {
         </div>
       )}
 
-      {gameStatus?.is_finished && gameStatus.join_code && (
-        <div style={{
-          background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-          color: 'white',
-          padding: '16px 20px',
-          borderRadius: '12px',
-          marginBottom: '16px',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: '1.4em', marginBottom: '6px' }}>🏁 Spel afgelopen!</div>
-          <div style={{ fontSize: '0.95em', marginBottom: '12px', opacity: 0.9 }}>
-            Bekijk de eindstand, het puntenverloop en alle ingezonden media.
-          </div>
-          <a
-            href={`/results/${gameStatus.join_code}`}
-            style={{
-              display: 'inline-block',
-              background: 'white',
-              color: '#11998e',
-              fontWeight: 'bold',
-              padding: '10px 24px',
-              borderRadius: '8px',
-              textDecoration: 'none',
-              fontSize: '1em',
-            }}
-          >
-            Bekijk eindoverzicht →
-          </a>
-        </div>
-      )}
 
       <MapContainer
         center={mapCenter}
