@@ -43,9 +43,9 @@ const Game: React.FC = () => {
   const [error, setError] = useState('');
 
   const addMediaFiles = (files: FileList | null) => {
-    if (files && files.length > 0) {
-      setMediaFiles((prev) => [...prev, ...Array.from(files)]);
-    }
+    if (!files || files.length === 0) return;
+    const fileArray = Array.from(files); // capture before input is cleared
+    setMediaFiles((prev) => [...prev, ...fileArray]);
   };
 
   // Queries
@@ -538,7 +538,7 @@ const Game: React.FC = () => {
                     multiple
                     style={{ display: 'none' }}
                     disabled={isCooldownActive(selectedAreaId)}
-                    onChange={(e) => { addMediaFiles(e.target.files); e.target.value = ''; }}
+                    onChange={(e) => addMediaFiles(e.target.files)}
                   />
                 </label>
               </div>
