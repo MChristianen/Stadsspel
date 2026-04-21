@@ -524,12 +524,12 @@ const Game: React.FC = () => {
             <div className="form-group">
               <label>Foto's / Video's <span style={{color: 'red'}}>*</span></label>
               {/* Hidden inputs — triggered programmatically via ref.current.click() from button onClick */}
-              <input type="file" accept="image/*" capture="environment"
+              <input type="file" accept="image/*"
                 style={{ position: 'fixed', top: '-200px', left: '-200px', width: '1px', height: '1px', opacity: 0 }}
                 ref={photoCameraInputRef}
                 onChange={(e) => { addMediaFiles(e.target.files); e.target.value = ''; }}
               />
-              <input type="file" accept="video/*" capture="environment"
+              <input type="file" accept="video/*"
                 style={{ position: 'fixed', top: '-200px', left: '-200px', width: '1px', height: '1px', opacity: 0 }}
                 ref={videoCameraInputRef}
                 onChange={(e) => { addMediaFiles(e.target.files); e.target.value = ''; }}
