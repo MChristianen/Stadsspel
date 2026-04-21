@@ -2,7 +2,94 @@ import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '../services/api';
+import type { PublicResultsResponse } from '../types/api';
 
+const W = 800, H = 300, PL = 55, PR = 20, PT = 20, PB = 40;
+const plotW = W - PL - PR;
+const plotH = H - PT - PB;
+
+const PointsChart: React.FC<{ data: PublicResultsResponse }> = ({ data }) => {
+  const teamColors = useMemo(() => {
+    const map: Record<string, string> = {};
+    data.final_standings.forEach((s) => { map[s.team_name] = s.team_color; });
+    return map;
+  }, [data]);
+
+  const series = useMemo(() => {
+    const teamNames = Array.from(new Set(data.points_history.map((p) => p.team_name)));
+    return teamNames.map((teamName) => {
+      const points = data.points_history
+        .filter((p) => p.team_name === teamName)
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+        .map((p) => ({ t: new Date(p.timestamp).getTime(), pts: p.points }));
+      return { teamName, color: teamColors[teamName] || '#999', points };
+    });
+  }, [data, teamColors]);
+
+  if (series.length === 0 || series.every((s) => s.points.length === 0)) {
+    return <p style={{ color: '#888' }}>Geen puntdata beschikbaar.</p>;
+  }
+
+  const allTimes = series.flatMap((s) => s.points.map((p) => p.t));
+  const allPts = series.flatMap((s) => s.points.map((p) => p.pts));
+  const tMin = Math.min(...allTimes);
+  const tMax = Math.max(...allTimes);
+  const pMax = Math.max(...allPts, 1);
+  const tRange = tMax - tMin || 1;
+
+  const toX = (t: number) => PL + ((t - tMin) / tRange) * plotW;
+  const toY = (p: number) => PT + plotH - (p / pMax) * plotH;
+
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((f) => ({
+    value: Math.round(pMax * f),
+    y: toY(pMax * f),
+  }));
+
+  const xTicks = [tMin, tMin + tRange * 0.5, tMax].map((t) => ({
+    t,
+    x: toX(t),
+    label: new Date(t).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }),
+  }));
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', fontFamily: 'sans-serif' }}>
+        {yTicks.map((tick) => (
+          <g key={tick.value}>
+            <line x1={PL} y1={tick.y} x2={W - PR} y2={tick.y} stroke="#eee" strokeWidth={1} />
+            <text x={PL - 6} y={tick.y + 4} textAnchor="end" fontSize={11} fill="#888">{tick.value}</text>
+          </g>
+        ))}
+        {xTicks.map((tick) => (
+          <text key={tick.t} x={tick.x} y={H - 8} textAnchor="middle" fontSize={10} fill="#888">{tick.label}</text>
+        ))}
+        <line x1={PL} y1={PT} x2={PL} y2={PT + plotH} stroke="#ccc" strokeWidth={1} />
+        <line x1={PL} y1={PT + plotH} x2={W - PR} y2={PT + plotH} stroke="#ccc" strokeWidth={1} />
+        {series.map((s) => {
+          if (s.points.length < 2) return null;
+          const pts = s.points.map((p) => `${toX(p.t)},${toY(p.pts)}`).join(' ');
+          return (
+            <polyline key={s.teamName} points={pts} fill="none" stroke={s.color}
+              strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+          );
+        })}
+        {series.flatMap((s) =>
+          s.points.map((p, i) => (
+            <circle key={`${s.teamName}-${i}`} cx={toX(p.t)} cy={toY(p.pts)} r={3} fill={s.color} />
+          ))
+        )}
+      </svg>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '8px' }}>
+        {series.map((s) => (
+          <div key={s.teamName} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+            <div style={{ width: 14, height: 14, borderRadius: '50%', background: s.color }} />
+            {s.teamName}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const PublicResults: React.FC = () => {
   const { joinCode } = useParams<{ joinCode: string }>();
@@ -20,28 +107,6 @@ const PublicResults: React.FC = () => {
     enabled: !!joinCode,
     retry: 1,
   });
-
-  type TimelineData = {
-    teamNames: string[];
-    rows: Array<{ timestamp: string; event: string; rows: Record<string, number> }>;
-  };
-
-  const timeline = useMemo(() => {
-    if (!data) return { teamNames: [], rows: [] } as TimelineData;
-    const grouped = new Map<string, { timestamp: string; event: string; rows: Record<string, number> }>();
-    const teamNames = Array.from(new Set(data.final_standings.map((s) => s.team_name)));
-    for (const point of data.points_history) {
-      const key = `${point.timestamp}|${point.event}`;
-      if (!grouped.has(key)) {
-        grouped.set(key, { timestamp: point.timestamp, event: point.event, rows: {} });
-      }
-      grouped.get(key)!.rows[point.team_name] = point.points;
-    }
-    return {
-      teamNames,
-      rows: Array.from(grouped.values()).sort((a, b) => a.timestamp.localeCompare(b.timestamp)),
-    } as TimelineData;
-  }, [data]);
 
   if (isLoading) {
     return <div className="leaderboard-container"><h2>Laden...</h2></div>;
@@ -77,36 +142,7 @@ const PublicResults: React.FC = () => {
       </div>
 
       <h2 style={{ marginTop: '24px' }}>Puntenverloop over tijd</h2>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ddd' }}>Tijd</th>
-              <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ddd' }}>Event</th>
-              {timeline.teamNames.map((teamName) => (
-                <th key={teamName} style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #ddd' }}>
-                  {teamName}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {timeline.rows.map((row, idx) => (
-              <tr key={`${row.timestamp}-${row.event}-${idx}`}>
-                <td style={{ padding: '8px', borderBottom: '1px solid #f1f1f1' }}>
-                  {new Date(row.timestamp).toLocaleString()}
-                </td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #f1f1f1' }}>{row.event}</td>
-                {timeline.teamNames.map((teamName) => (
-                  <td key={teamName} style={{ textAlign: 'right', padding: '8px', borderBottom: '1px solid #f1f1f1' }}>
-                    {(row.rows[teamName] ?? 0).toFixed(1)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <PointsChart data={data} />
 
       <h2 style={{ marginTop: '32px' }}>Media per gebied</h2>
       {loadingGallery ? (

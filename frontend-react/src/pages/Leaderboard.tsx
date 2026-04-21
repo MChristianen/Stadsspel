@@ -10,12 +10,6 @@ const Leaderboard: React.FC = () => {
     refetchInterval: 5000,
   });
 
-  const { data: gameStatus } = useQuery({
-    queryKey: ['gameStatus'],
-    queryFn: () => apiClient.getGameStatus(),
-    refetchInterval: 5000,
-  });
-
   if (isLoading) {
     return <div>Laden...</div>;
   }
@@ -24,32 +18,6 @@ const Leaderboard: React.FC = () => {
     <div className="scoreboard-container">
       <h1>Scorebord</h1>
 
-      {gameStatus?.is_finished && gameStatus.join_code && (
-        <div style={{
-          background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-          color: 'white',
-          padding: '14px 18px',
-          borderRadius: '10px',
-          marginBottom: '16px',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>🏁 Spel afgelopen — bekijk het volledige eindoverzicht</div>
-          <a
-            href={`/results/${gameStatus.join_code}`}
-            style={{
-              display: 'inline-block',
-              background: 'white',
-              color: '#11998e',
-              fontWeight: 'bold',
-              padding: '8px 20px',
-              borderRadius: '6px',
-              textDecoration: 'none',
-            }}
-          >
-            Eindoverzicht →
-          </a>
-        </div>
-      )}
 
       {leaderboard.length === 0 ? (
         <p className="empty-message">Nog geen punten. Verover als eerste een gebied!</p>
