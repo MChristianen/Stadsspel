@@ -216,6 +216,7 @@ const Admin: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['allSubmissions'] });
       queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
       queryClient.invalidateQueries({ queryKey: ['areas'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
     },
   });
 

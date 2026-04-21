@@ -8,7 +8,7 @@ from typing import List
 
 from app.db.session import get_db
 from app.db.models import (
-    Submission, SubmissionMedia, Team, Challenge, GameSession,
+    Submission, SubmissionMedia, Team, Challenge, GameSession, Area,
     SubmissionStatus, MediaType, ChallengeMode
 )
 from app.core.security import get_current_team
@@ -66,6 +66,7 @@ class SubmissionResponse(BaseModel):
     team_id: int
     team_name: str
     area_id: int
+    area_name: str | None = None
     text: str
     score: float | None
     status: str
@@ -240,6 +241,9 @@ def get_my_submissions(
         Submission.team_id == team.id
     ).order_by(Submission.created_at.desc()).all()
     
+    area_ids = {sub.area_id for sub in submissions}
+    areas_by_id = {a.id: a for a in db.query(Area).filter(Area.id.in_(area_ids)).all()}
+
     result = []
     for sub in submissions:
         media = [
@@ -250,19 +254,20 @@ def get_my_submissions(
             )
             for m in sub.media
         ]
-        
+        area = areas_by_id.get(sub.area_id)
         result.append(SubmissionResponse(
             id=sub.id,
             team_id=sub.team_id,
             team_name=team.name,
             area_id=sub.area_id,
+            area_name=area.name if area else None,
             text=sub.text,
             score=sub.score,
             status=sub.status.value,
             created_at=sub.created_at,
             media=media
         ))
-    
+
     return MySubmissionsResponse(submissions=result)
 
 
