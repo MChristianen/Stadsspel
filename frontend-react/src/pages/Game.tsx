@@ -8,7 +8,6 @@ import { useToast } from '../components/Toast';
 import 'leaflet/dist/leaflet.css';
 
 const Game: React.FC = () => {
-  const mediaInputRef = useRef<HTMLInputElement>(null);
   const { team } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -521,22 +520,27 @@ const Game: React.FC = () => {
 
             <div className="form-group">
               <label>Foto's / Video's <span style={{color: 'red'}}>*</span></label>
-              {/* Hidden inputs — triggered programmatically via ref.current.click() from button onClick */}
-              <input type="file" accept="image/*,video/*" multiple
-                style={{ position: 'fixed', top: '-200px', left: '-200px', width: '1px', height: '1px', opacity: 0 }}
-                ref={mediaInputRef}
-                onChange={(e) => { addMediaFiles(e.target.files); e.target.value = ''; }}
-              />
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                <button
-                  type="button"
+                <label
                   className="btn-primary"
-                  style={{ flex: 1 }}
-                  disabled={isCooldownActive(selectedAreaId)}
-                  onClick={() => mediaInputRef.current?.click()}
+                  style={{
+                    flex: 1,
+                    textAlign: 'center',
+                    cursor: isCooldownActive(selectedAreaId) ? 'not-allowed' : 'pointer',
+                    opacity: isCooldownActive(selectedAreaId) ? 0.5 : 1,
+                    pointerEvents: isCooldownActive(selectedAreaId) ? 'none' : 'auto',
+                  }}
                 >
                   📎 Voeg media toe
-                </button>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    disabled={isCooldownActive(selectedAreaId)}
+                    onChange={(e) => { addMediaFiles(e.target.files); e.target.value = ''; }}
+                  />
+                </label>
               </div>
               {mediaFiles.length > 0 ? (
                 <div style={{ fontSize: '13px', color: '#444', marginTop: '4px' }}>
