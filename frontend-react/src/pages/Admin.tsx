@@ -561,7 +561,7 @@ const Admin: React.FC = () => {
               </button>
             )}
 
-            {!currentSession.is_active && !currentSession.is_finished && sessionTeams.length > 0 && (
+            {!currentSession.is_active && !currentSession.is_finished && (
               <div style={{ marginTop: '12px' }}>
                 <div style={{ background: 'white', padding: '15px', borderRadius: '8px', marginBottom: '12px' }}>
                   <p style={{ marginTop: 0, fontWeight: 'bold' }}>Extra adminaccounts (optioneel)</p>
