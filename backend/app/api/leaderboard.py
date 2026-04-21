@@ -3,11 +3,14 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
+import logging
 
 from app.db.session import get_db
 from app.db.models import Team, GameSession
 from app.services.ownership import compute_team_scores
 from app.core.security import get_current_team
+
+logger = logging.getLogger("stadsspel")
 
 router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
 
@@ -45,11 +48,14 @@ def get_leaderboard_endpoint(
 
     # No active session means no live leaderboard.
     if not session or not session.is_active:
+        logger.info(f"Leaderboard: no active session for team {team.name} (is_admin={team.is_admin}, game_session_id={team.game_session_id})")
         return LeaderboardResponse(leaderboard=[])
-    
+
+    logger.info(f"Leaderboard: team={team.name} is_admin={team.is_admin} session_id={session.id}")
     score_rows = compute_team_scores(db, session)
+    logger.info(f"Leaderboard: score_rows={score_rows}")
     teams = db.query(Team).filter(Team.game_session_id == session.id, Team.is_admin == False).all()
-    teams_by_id = {team.id: team for team in teams}
+    teams_by_id = {t.id: t for t in teams}
 
     sortable_rows = []
     for row in score_rows:
