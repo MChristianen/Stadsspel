@@ -44,7 +44,10 @@ def get_leaderboard_endpoint(
     if team.game_session_id:
         session = db.query(GameSession).filter(GameSession.id == team.game_session_id).first()
     elif team.is_admin:
-        session = db.query(GameSession).filter(GameSession.is_active == True).first()
+        session = db.query(GameSession).filter(
+            GameSession.is_active == True,
+            GameSession.is_finished == False,
+        ).order_by(GameSession.id.desc()).first()
 
     # No active session means no live leaderboard.
     if not session or not session.is_active:
