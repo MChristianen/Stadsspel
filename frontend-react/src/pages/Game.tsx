@@ -8,9 +8,7 @@ import { useToast } from '../components/Toast';
 import 'leaflet/dist/leaflet.css';
 
 const Game: React.FC = () => {
-  const photoCameraInputRef = useRef<HTMLInputElement>(null);
-  const videoCameraInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
   const { team } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -524,19 +522,9 @@ const Game: React.FC = () => {
             <div className="form-group">
               <label>Foto's / Video's <span style={{color: 'red'}}>*</span></label>
               {/* Hidden inputs — triggered programmatically via ref.current.click() from button onClick */}
-              <input type="file" accept="image/*"
-                style={{ position: 'fixed', top: '-200px', left: '-200px', width: '1px', height: '1px', opacity: 0 }}
-                ref={photoCameraInputRef}
-                onChange={(e) => { addMediaFiles(e.target.files); e.target.value = ''; }}
-              />
-              <input type="file" accept="video/*"
-                style={{ position: 'fixed', top: '-200px', left: '-200px', width: '1px', height: '1px', opacity: 0 }}
-                ref={videoCameraInputRef}
-                onChange={(e) => { addMediaFiles(e.target.files); e.target.value = ''; }}
-              />
               <input type="file" accept="image/*,video/*" multiple
                 style={{ position: 'fixed', top: '-200px', left: '-200px', width: '1px', height: '1px', opacity: 0 }}
-                ref={galleryInputRef}
+                ref={mediaInputRef}
                 onChange={(e) => { addMediaFiles(e.target.files); e.target.value = ''; }}
               />
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
@@ -545,27 +533,9 @@ const Game: React.FC = () => {
                   className="btn-primary"
                   style={{ flex: 1 }}
                   disabled={isCooldownActive(selectedAreaId)}
-                  onClick={() => photoCameraInputRef.current?.click()}
+                  onClick={() => mediaInputRef.current?.click()}
                 >
-                  📷 Maak foto
-                </button>
-                <button
-                  type="button"
-                  className="btn-primary"
-                  style={{ flex: 1 }}
-                  disabled={isCooldownActive(selectedAreaId)}
-                  onClick={() => videoCameraInputRef.current?.click()}
-                >
-                  🎥 Maak video
-                </button>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  style={{ flex: 1 }}
-                  disabled={isCooldownActive(selectedAreaId)}
-                  onClick={() => galleryInputRef.current?.click()}
-                >
-                  🖼️ Kies uit galerij
+                  📎 Voeg media toe
                 </button>
               </div>
               {mediaFiles.length > 0 ? (
