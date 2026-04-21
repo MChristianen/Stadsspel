@@ -8,6 +8,7 @@ const Leaderboard: React.FC = () => {
     queryKey: ['leaderboard'],
     queryFn: () => apiClient.getLeaderboard(),
     refetchInterval: 5000,
+    refetchIntervalInBackground: true,
   });
 
   if (isLoading) {
