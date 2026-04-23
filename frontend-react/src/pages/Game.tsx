@@ -332,7 +332,7 @@ const Game: React.FC = () => {
               const cooldownTime = getCooldownTime(feature.properties.id);
               const modeEmoji = feature.properties.challenge?.mode === 'LAST_APPROVED_WINS' ? '🏆' : '📊';
               const rawDesc = feature.properties.challenge?.description || '';
-              const popupDesc = rawDesc.replace(/\s*\(https:\/\/maps\.google\.com\/[^)]+\)/g, '');
+              const popupDesc = rawDesc.replace(/\s*\(?https:\/\/maps\.google\.com\/[^\s)]+\)?/g, '');
               const popupContent = `
                 <div style="min-width: 200px;">
                   <h4 style="margin: 0 0 8px 0;">${feature.properties.name}</h4>
@@ -418,7 +418,7 @@ const Game: React.FC = () => {
                   const desc = area.challenge.description;
                   const urlMatch = desc.match(/https:\/\/maps\.google\.com\/[^\s)]+/);
                   const mapsUrl = urlMatch ? urlMatch[0] : null;
-                  const cleanDesc = desc.replace(/\s*\(https:\/\/maps\.google\.com\/[^)]+\)/g, '');
+                  const cleanDesc = desc.replace(/\s*\(?https:\/\/maps\.google\.com\/[^\s)]+\)?/g, '');
                   return (
                     <div style={{ background: '#f8f9ff', border: '1px solid #e0e4ff', borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '14px 20px', marginBottom: '16px', fontSize: '0.95em', lineHeight: '1.6', color: '#333', whiteSpace: 'pre-wrap' }}>
                       <span dangerouslySetInnerHTML={{ __html: cleanDesc }} />
