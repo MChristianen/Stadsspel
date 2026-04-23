@@ -323,7 +323,7 @@ const Game: React.FC = () => {
             key={areasRenderKey}
             data={areasData}
             style={(feature) => ({
-              fillColor: feature?.properties.ownership?.owner_team_color || '#cccccc',
+              fillColor: (gameStatus?.is_finished ? null : feature?.properties.ownership?.owner_team_color) || '#cccccc',
               fillOpacity: 0.5,
               color: '#000',
               weight: 2,

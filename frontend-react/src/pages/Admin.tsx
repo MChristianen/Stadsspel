@@ -202,8 +202,6 @@ const Admin: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameStatus'] });
       queryClient.invalidateQueries({ queryKey: ['allSessions'] });
-      setCurrentSession(null);
-      setShowCreateForm(true);
       showToast('Spel gestopt', 'warning');
     },
     onError: () => showToast('Stoppen mislukt', 'error'),
@@ -304,7 +302,7 @@ const Admin: React.FC = () => {
       }
       alert(successMessage);
     } catch {
-      alert('KopiÃ«ren mislukt. Kopieer de tekst handmatig.');
+      alert('Kopiëren mislukt. Kopieer de tekst handmatig.');
     }
   };
 

@@ -50,15 +50,24 @@ def get_game_status(
     """Get current game status for the logged-in team's session."""
     # Find the active game session for this team
     if current_team.is_admin:
-        # Admin sees any active session
+        # Admin sees any active session, falling back to most recently finished
         session = db.query(GameSession).filter(GameSession.is_active == True).first()
+        if not session:
+            session = db.query(GameSession).filter(
+                GameSession.is_finished == True
+            ).order_by(GameSession.id.desc()).first()
     else:
         # Regular team sees their own session
         session = db.query(GameSession).filter(
             GameSession.id == current_team.game_session_id
         ).first()
-    
-    if not session or not session.is_active:
+
+    if not session:
+        return GameStatus(is_active=False)
+
+    if not session.is_active:
+        if session.is_finished:
+            return GameStatus(is_active=False, is_finished=True, join_code=session.join_code)
         return GameStatus(is_active=False)
     
     now = datetime.utcnow()
