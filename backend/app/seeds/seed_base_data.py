@@ -449,7 +449,7 @@ CITY_DATA = [
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
                     "title": "Drankje bij Oriente",
-                    "description": "📸 We zijn weer terug op Oriente, het moderne deel van Lissabon dat bekendstaat om zijn strakke architectuur en het grote treinstation Gare do Oriente. Bestel hetzelfde drankje bij dezelfde tent als gisteren. Als jullie het nog weten tenminste! 📍 Gare do Oriente (https://maps.google.com/?q=Gare+do+Oriente+Lisboa)",
+                    "description": "📸 We zijn bij Oriente, het moderne deel van Lissabon dat bekendstaat om zijn strakke architectuur en het grote treinstation Gare do Oriente. Bestel een drankje bij een van de cafés in de buurt. Pak vooral uit! 📍 Gare do Oriente (https://maps.google.com/?q=Gare+do+Oriente+Lisboa)",
                 },
             },
             {
@@ -468,7 +468,7 @@ CITY_DATA = [
                     "description": "📸 Bezoek een van de weinige plekken in Lissabon waar je echt een stukje platteland midden in de stad ervaart: de kinderboerderij Quinta Pedagógica dos Olivais. Aai één van de dieren en leg dit op foto vast alsof je dit ook echt leuk vindt :) 📍 Quinta Pedagógica dos Olivais (https://maps.google.com/?q=Quinta+Pedagogica+dos+Olivais+Lisboa)",
                 },
             },
-            {
+            {s
                 "name": "Alvalade",
                 "description": "Rustige woonwijk met groenstroken en pleinen",
                 "polygon": [
