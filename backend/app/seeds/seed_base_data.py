@@ -468,7 +468,7 @@ CITY_DATA = [
                     "description": "📸 Bezoek een van de weinige plekken in Lissabon waar je echt een stukje platteland midden in de stad ervaart: de kinderboerderij Quinta Pedagógica dos Olivais. Aai één van de dieren en leg dit op foto vast alsof je dit ook echt leuk vindt :) 📍 Quinta Pedagógica dos Olivais (https://maps.google.com/?q=Quinta+Pedagogica+dos+Olivais+Lisboa)",
                 },
             },
-            {s
+            {
                 "name": "Alvalade",
                 "description": "Rustige woonwijk met groenstroken en pleinen",
                 "polygon": [
