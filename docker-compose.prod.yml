@@ -37,6 +37,8 @@ services:
       MEDIA_LOCAL_PATH: /app/media
       MEDIA_BASE_URL: https://${DOMAIN}/media
       SERVE_LEGACY_FRONTEND: "false"
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     volumes:
       - media_data:/app/media
     networks:
