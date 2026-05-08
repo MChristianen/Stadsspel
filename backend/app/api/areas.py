@@ -22,6 +22,7 @@ class ChallengeInfo(BaseModel):
     title: str
     description: str
     time_limit_minutes: int | None
+    score_description: str | None
 
 
 class OwnershipInfo(BaseModel):
@@ -111,7 +112,8 @@ def get_areas_geojson(
                     "id": challenge.id,
                     "mode": challenge.mode.value,
                     "title": challenge.title,
-                    "description": challenge.description
+                    "description": challenge.description,
+                    "score_description": challenge.score_description,
                 } if challenge else None,
                 "ownership": {
                     "owner_team_id": ownership.owner_team_id if ownership else None,
@@ -185,7 +187,8 @@ def get_area_detail(
             mode=challenge.mode.value,
             title=challenge.title,
             description=challenge.description,
-            time_limit_minutes=challenge.time_limit_minutes
+            time_limit_minutes=challenge.time_limit_minutes,
+            score_description=challenge.score_description,
         ),
         ownership=OwnershipInfo(
             owner_team_id=ownership.owner_team_id if ownership else None,

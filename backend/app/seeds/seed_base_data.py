@@ -20,8 +20,30 @@ from app.db.models import (
     SubmissionMedia,
     Approval,
 )
+import os
+import secrets
+from pathlib import Path
 from app.core.security import get_password_hash
 from app.core.logging import logger
+from app.core.config import settings
+
+
+def _get_admin_password() -> str | None:
+    """Read ADMIN_PASSWORD from environment or .env file directly."""
+    # Try environment variable first (set in shell or by start.ps1)
+    value = os.environ.get('ADMIN_PASSWORD')
+    if value:
+        return value
+    # Fall back to explicit .env parse via python-dotenv
+    try:
+        from dotenv import dotenv_values
+        env_path = Path(__file__).parent.parent.parent / ".env"
+        env_vars = dotenv_values(env_path)
+        return env_vars.get('ADMIN_PASSWORD') or None
+    except Exception:
+        pass
+    # Final fallback: pydantic settings
+    return settings.ADMIN_PASSWORD or None
 
 
 CITY_DATA = [
@@ -147,6 +169,7 @@ CITY_DATA = [
                     "mode": ChallengeMode.HIGHEST_SCORE_WINS,
                     "title": "Kramen tellen op de Dappermarkt",
                     "description": "Tel hoeveel marktkramen je ziet op de Dappermarkt (alleen tijdens marktdagen)",
+                    "score_description": "Hoeveel marktkramen hebben jullie geteld op de Dappermarkt?",
                 },
             },
             {
@@ -162,6 +185,7 @@ CITY_DATA = [
                     "mode": ChallengeMode.HIGHEST_SCORE_WINS,
                     "title": "Zoek de ArenA",
                     "description": "Maak een foto van de Johan Cruijff ArenA. Bonus punten als je binnen bent!",
+                    "score_description": "Hoeveel punten is jullie foto waard? (1 = buiten, 2 = met bord/ingang, 3 = binnen)",
                 },
             },
             {
@@ -214,6 +238,7 @@ CITY_DATA = [
                     "mode": ChallengeMode.HIGHEST_SCORE_WINS,
                     "title": "Tel straatkunst",
                     "description": "Tel hoeveel verschillende street-art werken je vindt in dit gebied",
+                    "score_description": "Hoeveel verschillende street-art werken hebben jullie gevonden?",
                 },
             },
             {
@@ -242,6 +267,7 @@ CITY_DATA = [
                     "mode": ChallengeMode.HIGHEST_SCORE_WINS,
                     "title": "Scoor met sport",
                     "description": "Voer samen 1 minuut sportoefeningen uit; score = totaal aantal herhalingen",
+                    "score_description": "Hoeveel herhalingen hebben jullie samen gedaan in 1 minuut?",
                 },
             },
             {
@@ -281,6 +307,7 @@ CITY_DATA = [
                     "mode": ChallengeMode.HIGHEST_SCORE_WINS,
                     "title": "Pastéis de nata bij Pastéis de Belém",
                     "description": "📸 Ga naar misschien wel de bekendste bakker van Portugal, Pastéis de Belém. Sinds 1837 wordt hier volgens een geheim recept dé originele pastel de nata gemaakt, waar mensen van over de hele wereld voor in de rij staan. Bestel zoveel pastéis de nata als jullie aankunnen en eet ze ter plekke op. Jullie score = het totale aantal pastéis de nata dat jullie samen hebben gegeten. Meer is beter! 📍 Pastéis de Belém, Rua de Belém 84 (https://maps.google.com/?q=Pasteis+de+Belem+Lisboa)",
+                    "score_description": "Hoeveel pastéis de nata hebben jullie samen opgegeten?",
                 },
             },
             {
@@ -322,6 +349,7 @@ CITY_DATA = [
                     "mode": ChallengeMode.HIGHEST_SCORE_WINS,
                     "title": "Wijn bij Mercado de Campo de Ourique",
                     "description": "🎬 Tijd om wat te drinken! Bezoek het Mercado de Campo de Ourique, een geliefde food market onder locals waar je vooral veel Portugezen zelf vindt in plaats van toeristen. Jullie score = het totale aantal glazen wijn dat jullie samen drinken bij één van de kraampjes. Elk leeg glas telt, dus proef maar stevig door! Proost op Lissabon en op de punten! 📍 Mercado de Campo de Ourique (https://maps.google.com/?q=Mercado+Campo+de+Ourique+Lisboa)",
+                    "score_description": "Hoeveel glazen wijn hebben jullie samen gedronken?",
                 },
             },
             {
@@ -380,6 +408,7 @@ CITY_DATA = [
                     "mode": ChallengeMode.HIGHEST_SCORE_WINS,
                     "title": "Trap-challenge bij Jardim Botânico d'Ajuda",
                     "description": "🎬 Ga naar de Jardim Botânico d'Ajuda. Een prachtige Botanische tuin met de herkenbare symmetrische trap. Doe de trap-challenge: ren in 60 seconden zo vaak mogelijk van onderaan naar boven en weer terug. Jullie score = het aantal complete rondes (omhoog én omlaag) dat één persoon haalt in 60 seconden. De andere persoon filmt en telt. Je begint voor de trap op het zand. Elke complete ronde telt als 1 punt. 📍 Jardim Botânico d'Ajuda (https://maps.google.com/?q=Jardim+Botanico+da+Ajuda+Lisboa)",
+                    "score_description": "Hoeveel complete rondes (omhoog én omlaag) heeft één persoon gehaald in 60 seconden?",
                 },
             },
             {
@@ -436,6 +465,7 @@ CITY_DATA = [
                     "mode": ChallengeMode.HIGHEST_SCORE_WINS,
                     "title": "Craft bier bij Dois Corvos Marvila",
                     "description": "📸 Bezoek Dois Corvos Marvila Taproom, een lokale bierbrouwerij waar ze hun eigen craft bier brouwen en waar liefhebbers samenkomen om nieuwe smaken te ontdekken. Jullie score = het totale aantal verschillende craft bieren van de brouwerij dat jullie samen proeven. Hoe meer smaken, hoe hoger de score! Tip: houd rekening met de openingstijden. Saúde! 📍 Dois Corvos Marvila Taproom (https://maps.google.com/?q=Dois+Corvos+Marvila+Taproom+Lisboa)",
+                    "score_description": "Hoeveel verschillende craft bieren hebben jullie samen geproefd?",
                 },
             },
             {
@@ -495,6 +525,7 @@ CITY_DATA = [
                     "mode": ChallengeMode.HIGHEST_SCORE_WINS,
                     "title": "Hoog houden bij Estádio da Luz",
                     "description": "🎬 Het Estádio da Luz, ook wel \"Stadium of Light\" of \"A Catedral\" genoemd, is het grootste voetbalstadion van Portugal! Laat zien wat je balgevoel waard is: houd zo vaak mogelijk hoog met een willekeurig voorwerp met het Benfica stadion op de achtergrond. Jullie score = het aantal keer hoog houden zonder dat het voorwerp de grond raakt van één persoon. De ander filmt dit (max 30 seconden) en telt. 📍 Estádio da Luz (https://maps.google.com/?q=Estadio+da+Luz+Lisboa)",
+                    "score_description": "Hoeveel keer heeft één persoon het voorwerp hoog gehouden zonder dat het de grond raakte?",
                 },
             },
             {
@@ -509,6 +540,7 @@ CITY_DATA = [
                     "mode": ChallengeMode.HIGHEST_SCORE_WINS,
                     "title": "Wens bij Fonte Luminosa",
                     "description": "🎬 Ga naar het Fonte Luminosa en gooi zoveel munten als jullie willen in de fontein! Deze indrukwekkende fontein staat bekend om zijn lichtshows en werd ooit gebouwd als symbool van modern Lissabon. Jullie score = het totale aantal muntstukken dat jullie samen in de fontein gooien. Voor elk muntje moet je hardop een unieke wens uitspreken — die wensen willen we horen op de video! 📍 Fonte Luminosa, Alameda Dom Afonso Henriques (https://maps.google.com/?q=Fonte+Luminosa+Lisboa)",
+                    "score_description": "Hoeveel muntstukken hebben jullie samen in de fontein gegooid?",
                 },
             },
             {
@@ -524,6 +556,7 @@ CITY_DATA = [
                     "mode": ChallengeMode.HIGHEST_SCORE_WINS,
                     "title": "Bottle flip bij het Aqueduto das Águas Livres",
                     "description": "🎬 Doe de bottle flip challenge met een flesje naar keuze met het Aqueduto das Águas Livres op de achtergrond. Dit indrukwekkende aquaduct uit de 18e eeuw overleefde zelfs de grote aardbeving van 1755 en is nog steeds één van de iconen van de stad. Jullie score = het aantal geslaagde bottle flips dat één persoon haalt in 60 seconden. Alleen een perfecte landing telt! De ander filmt en telt. Jullie bepalen zelf waar je staat, zolang het aquaduct maar op de achtergrond zichtbaar is. 📍 Aqueduto das Águas Livres (https://maps.google.com/?q=Aqueduto+das+Aguas+Livres+Lisboa)",
+                    "score_description": "Hoeveel geslaagde bottle flips heeft één persoon gehaald in 60 seconden?",
                 },
             },
             {
@@ -621,6 +654,7 @@ CITY_DATA = [
                     "mode": ChallengeMode.HIGHEST_SCORE_WINS,
                     "title": "Honden bij Parque das Conchas",
                     "description": "📸 Ga naar het lokale Parque das Conchas e dos Lilases, een rustig park waar vooral buurtbewoners komen om te wandelen en hun honden uit te laten. Jullie score = het totale aantal verschillende honden waarmee jullie samen op de foto gaan. Elke hond telt, maar elke foto moet een andere hond zijn! Woef! Flits! 📍 Parque das Conchas e dos Lilases (https://maps.google.com/?q=Parque+das+Conchas+Lumiar+Lisboa)",
+                    "score_description": "Met hoeveel verschillende honden zijn jullie op de foto gegaan?",
                 },
             },
         ],
@@ -629,25 +663,56 @@ CITY_DATA = [
 
 
 def ensure_admin(db):
-    """Ensure the default admin/admin321 account exists."""
-    admin = db.query(Team).filter(Team.name == "admin", Team.is_admin == True).first()
-    if admin:
-        # Update password if it exists to ensure it's admin321
-        admin.password_hash = get_password_hash("admin321")
-        db.commit()
-        logger.info("Admin account already exists (admin) - password updated to admin321")
+    """Create or update admin account.
+
+    - No admin exists → create with ADMIN_PASSWORD from env, or auto-generate.
+    - Admin exists + ADMIN_PASSWORD in env → update password (intentional reset).
+    - Admin exists + no ADMIN_PASSWORD → leave untouched.
+    """
+    username = settings.ADMIN_USERNAME
+    border = "=" * 52
+    admin_password = _get_admin_password()
+
+    existing = db.query(Team).filter(
+        Team.name == username,
+        Team.is_admin == True,
+        Team.game_session_id == None,
+    ).first()
+
+    if existing:
+        if admin_password:
+            existing.password_hash = get_password_hash(admin_password)
+            db.commit()
+            logger.info(border)
+            logger.info(f"  Admin wachtwoord bijgewerkt voor: {existing.name}")
+            logger.info(border)
+        else:
+            logger.info(f"Admin account bestaat al: {existing.name}")
         return
 
-    db.add(
-        Team(
-            name="admin",
-            password_hash=get_password_hash("admin321"),
-            color="#000000",
-            is_admin=True,
-        )
-    )
+    auto_generated = not admin_password
+    if auto_generated:
+        admin_password = secrets.token_urlsafe(16)
+
+    db.add(Team(
+        name=username,
+        password_hash=get_password_hash(admin_password),
+        color="#000000",
+        is_admin=True,
+    ))
     db.commit()
-    logger.info("Created admin account: admin/admin321")
+
+    if auto_generated:
+        logger.info(border)
+        logger.info("  Admin account aangemaakt")
+        logger.info(f"  Gebruikersnaam : {username}")
+        logger.info(f"  Wachtwoord     : {admin_password}")
+        logger.info("  Sla dit op — wordt NIET opnieuw getoond!")
+        logger.info(border)
+    else:
+        logger.info(border)
+        logger.info(f"  Admin account aangemaakt: {username}")
+        logger.info(border)
 
 
 def upsert_city(db, city_data: dict):
@@ -713,6 +778,7 @@ def upsert_city(db, city_data: dict):
                     mode=challenge_data["mode"],
                     title=challenge_data["title"],
                     description=challenge_data["description"],
+                    score_description=challenge_data.get("score_description"),
                 )
             )
             logger.info(f"Created challenge: {area.name}")
@@ -720,6 +786,7 @@ def upsert_city(db, city_data: dict):
             challenge.mode = challenge_data["mode"]
             challenge.title = challenge_data["title"]
             challenge.description = challenge_data["description"]
+            challenge.score_description = challenge_data.get("score_description")
             logger.info(f"Updated challenge: {area.name}")
 
         ownership = db.query(TerritoryOwnership).filter(TerritoryOwnership.area_id == area.id).first()
@@ -785,7 +852,6 @@ def seed_cities():
         logger.info("=" * 50)
         logger.info("Seed completed")
         logger.info("Cities available: Amsterdam, Roosendaal, Lissabon")
-        logger.info("Admin login: username=admin password=admin321")
         logger.info("=" * 50)
     except Exception as exc:
         logger.error(f"Seed failed: {exc}")

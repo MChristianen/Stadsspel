@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str | None = None
     S3_REGION: str = "auto"
     
+    # Admin account
+    ADMIN_USERNAME: str = "admin"
+    ADMIN_PASSWORD: str | None = None
+
     # Game
     DEFAULT_COOLDOWN_MINUTES: int = 15
     MAX_ADMINS: int = 3

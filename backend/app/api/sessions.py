@@ -29,6 +29,7 @@ class TeamInfo(BaseModel):
     id: int
     name: str
     color: str
+    is_tikker: bool
     created_at: datetime
 
 
@@ -293,11 +294,12 @@ def list_sessions(
                 id=t.id,
                 name=t.name,
                 color=t.color,
+                is_tikker=t.is_tikker,
                 created_at=t.created_at
             )
             for t in teams
         ]
-        
+
         # Calculate is_finished dynamically based on end_time
         is_finished = session.end_time is not None and now >= session.end_time
         
@@ -353,11 +355,12 @@ def get_session(
             id=t.id,
             name=t.name,
             color=t.color,
+            is_tikker=t.is_tikker,
             created_at=t.created_at
         )
         for t in teams
     ]
-    
+
     return SessionDetailResponse(
         id=session.id,
         city_id=session.city_id,
@@ -651,6 +654,7 @@ def get_session_teams(
             id=t.id,
             name=t.name,
             color=t.color,
+            is_tikker=t.is_tikker,
             created_at=t.created_at
         )
         for t in teams

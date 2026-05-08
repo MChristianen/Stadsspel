@@ -1,11 +1,20 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
 import { apiClient } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
 import 'leaflet/dist/leaflet.css';
+
+const createColorMarker = (color: string, label: string) =>
+  L.divIcon({
+    className: '',
+    html: `<div title="${label}" style="width:18px;height:18px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.5);"></div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  });
 
 const Game: React.FC = () => {
   const { team } = useAuth();
@@ -16,7 +25,6 @@ const Game: React.FC = () => {
   const assignmentFormRef = useRef<HTMLDivElement>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const isSubmittingRef = useRef(false);
-  // Live countdown: tick locally between server polls
   const [localSecondsLeft, setLocalSecondsLeft] = useState<number>(0);
   const prevSubmissionStatusRef = useRef<Record<number, string>>({});
 
@@ -25,12 +33,10 @@ const Game: React.FC = () => {
       const areaId = (event as CustomEvent<number>).detail;
       setSelectedAreaId(areaId);
     };
-
     document.addEventListener('selectArea', handleSelectArea);
     return () => document.removeEventListener('selectArea', handleSelectArea);
   }, []);
 
-  // Only the popup button changes selectedAreaId, so the form scroll happens from that action.
   useEffect(() => {
     if (selectedAreaId && assignmentFormRef.current) {
       assignmentFormRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -38,13 +44,21 @@ const Game: React.FC = () => {
   }, [selectedAreaId]);
 
   const [submissionText, setSubmissionText] = useState('');
-  const [submissionScore, setSubmissionScore] = useState<number>(50);
+  const [submissionScore, setSubmissionScore] = useState<number | null>(null);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [error, setError] = useState('');
 
+  // Tikker: tag team selector
+  const [showTagPanel, setShowTagPanel] = useState(false);
+
+  // GPS: own position
+  const [ownPosition, setOwnPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const ownPositionRef = useRef<{ lat: number; lng: number } | null>(null);
+  const [gpsStatus, setGpsStatus] = useState<'waiting' | 'active' | 'denied' | 'unavailable'>('waiting');
+
   const addMediaFiles = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const fileArray = Array.from(files); // capture before input is cleared
+    const fileArray = Array.from(files);
     setMediaFiles((prev) => [...prev, ...fileArray]);
   };
 
@@ -55,7 +69,6 @@ const Game: React.FC = () => {
     refetchInterval: 5000,
   });
 
-  // Redirect non-admin teams based on game state
   useEffect(() => {
     if (!gameStatus || team?.is_admin) return;
     if (gameStatus.is_finished && gameStatus.join_code) {
@@ -68,11 +81,10 @@ const Game: React.FC = () => {
   const { data: areasData, isLoading: areasLoading, error: areasError } = useQuery({
     queryKey: ['areas'],
     queryFn: () => apiClient.getAreasGeoJSON(),
-    refetchInterval: 3000, // Real-time updates elke 3 seconden
+    refetchInterval: 3000,
     retry: 1,
   });
 
-  // Sync server remaining_seconds into local countdown; tick down locally between polls
   useEffect(() => {
     if (gameStatus?.remaining_seconds != null && !gameStatus.is_paused) {
       setLocalSecondsLeft(gameStatus.remaining_seconds);
@@ -85,16 +97,14 @@ const Game: React.FC = () => {
     return () => clearInterval(id);
   }, [gameStatus?.is_active, gameStatus?.is_paused, gameStatus?.is_finished]);
 
-  // Fetch cooldowns for current team
   const { data: cooldowns = [] } = useQuery({
     queryKey: ['cooldowns'],
     queryFn: () => apiClient.getMyCooldowns(),
-    refetchInterval: 1000, // Update elke seconde voor accurate timer
-    enabled: !!team?.game_session_id, // Only fetch if team has a session
+    refetchInterval: 1000,
+    enabled: !!team?.game_session_id,
     retry: false,
   });
 
-  // Poll own submissions to detect rejections and notify the team
   const { data: mySubmissions = [] } = useQuery({
     queryKey: ['mySubmissions'],
     queryFn: () => apiClient.getMySubmissions(),
@@ -102,9 +112,65 @@ const Game: React.FC = () => {
     enabled: !!team?.game_session_id,
   });
 
+  // Tikker status poll — all teams need this
+  const { data: tikkerStatus } = useQuery({
+    queryKey: ['tikkerStatus'],
+    queryFn: () => apiClient.getTikkerStatus(),
+    refetchInterval: 5000,
+    enabled: !!team?.game_session_id && !!gameStatus?.is_active,
+  });
+
+  // GPS: watch own position
+  useEffect(() => {
+    if (!gameStatus?.is_active) return;
+    if (!navigator.geolocation) {
+      setGpsStatus('unavailable');
+      return;
+    }
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setOwnPosition(p);
+        ownPositionRef.current = p;
+        setGpsStatus('active');
+      },
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) setGpsStatus('denied');
+      },
+      { enableHighAccuracy: true, maximumAge: 5000 },
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [gameStatus?.is_active]);
+
+  // GPS: send own position to backend every 10s
+  useEffect(() => {
+    if (!gameStatus?.is_active) return;
+    const id = setInterval(() => {
+      const p = ownPositionRef.current;
+      if (p) apiClient.updateLocation(p.lat, p.lng).catch(() => {});
+    }, 10000);
+    return () => clearInterval(id);
+  }, [gameStatus?.is_active]);
+
+  // Tikker: fetch all team locations
+  const { data: teamLocations = [] } = useQuery({
+    queryKey: ['teamLocations'],
+    queryFn: () => apiClient.getLocations(),
+    enabled: !!tikkerStatus?.is_tikker && !!gameStatus?.is_active,
+    refetchInterval: 5000,
+  });
+
+  // Session teams — needed for tikker tag panel
+  const { data: sessionTeams = [] } = useQuery({
+    queryKey: ['sessionTeamsGame'],
+    queryFn: () => apiClient.getTaggableTeams(),
+    enabled: !!tikkerStatus?.is_tikker,
+    refetchInterval: 10000,
+  });
+
   useEffect(() => {
     if (mySubmissions.length === 0) return;
-    mySubmissions.forEach((sub: any) => {
+    mySubmissions.forEach((sub) => {
       const prev = prevSubmissionStatusRef.current[sub.id];
       if (prev && prev !== sub.status && sub.status === 'REJECTED') {
         showToast(`Inzending voor ${sub.area_name} is afgewezen`, 'error', 8000);
@@ -114,7 +180,7 @@ const Game: React.FC = () => {
       }
     });
     const next: Record<number, string> = {};
-    mySubmissions.forEach((sub: any) => { next[sub.id] = sub.status; });
+    mySubmissions.forEach((sub) => { next[sub.id] = sub.status; });
     prevSubmissionStatusRef.current = next;
   }, [mySubmissions, showToast]);
 
@@ -133,7 +199,7 @@ const Game: React.FC = () => {
       setSelectedAreaId(null);
       setSubmissionText('');
       setMediaFiles([]);
-      setSubmissionScore(50);
+      setSubmissionScore(null);
       setError('');
       showToast('Inzending verstuurd! Wacht op goedkeuring van een admin.', 'success');
     },
@@ -158,7 +224,42 @@ const Game: React.FC = () => {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const tagMutation = useMutation({
+    mutationFn: (targetTeamId: number) => apiClient.tagTeam(targetTeamId),
+    onSuccess: (_, targetTeamId) => {
+      const targetName = sessionTeams.find((t) => t.id === targetTeamId)?.name ?? 'het team';
+      showToast(`Tikverzoek verstuurd naar ${targetName}!`, 'info');
+      setShowTagPanel(false);
+      queryClient.invalidateQueries({ queryKey: ['tikkerStatus'] });
+    },
+    onError: (err: any) => {
+      showToast(err.response?.data?.detail ?? 'Tikken mislukt', 'error');
+    },
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: () => apiClient.confirmTag(),
+    onSuccess: () => {
+      showToast('Jullie zijn nu de tikker!', 'warning', 8000);
+      queryClient.invalidateQueries({ queryKey: ['tikkerStatus'] });
+    },
+    onError: (err: any) => {
+      showToast(err.response?.data?.detail ?? 'Bevestigen mislukt', 'error');
+    },
+  });
+
+  const denyMutation = useMutation({
+    mutationFn: () => apiClient.denyTag(),
+    onSuccess: () => {
+      showToast('Tikverzoek afgewezen.', 'info');
+      queryClient.invalidateQueries({ queryKey: ['tikkerStatus'] });
+    },
+    onError: (err: any) => {
+      showToast(err.response?.data?.detail ?? 'Afwijzen mislukt', 'error');
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedAreaId) return;
     if (isSubmittingRef.current) return;
@@ -174,11 +275,22 @@ const Game: React.FC = () => {
       (f) => f.properties.id === selectedAreaId
     )?.properties;
 
+    const isHighestScore = selectedArea?.challenge?.mode === 'HIGHEST_SCORE_WINS';
+    if (isHighestScore && (submissionScore === null || submissionScore < 0)) {
+      const scoreDesc = selectedArea?.challenge?.score_description;
+      const msg = scoreDesc
+        ? `Vergeet je score niet: "${scoreDesc}"`
+        : 'Je moet een score invullen voor deze opdracht';
+      setError(msg);
+      showToast(msg, 'warning');
+      return;
+    }
+
     isSubmittingRef.current = true;
     submitMutation.mutate({
       areaId: selectedAreaId,
       text: submissionText,
-      score: selectedArea?.challenge?.mode === 'HIGHEST_SCORE_WINS' ? submissionScore : null,
+      score: isHighestScore ? submissionScore : null,
       files: mediaFiles,
     });
   };
@@ -204,20 +316,17 @@ const Game: React.FC = () => {
     }
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
-    if (minutes === 0) {
-      return `${hours} ${hours === 1 ? 'uur' : 'uur'}`;
-    }
+    if (minutes === 0) return `${hours} uur`;
     return `${hours}u ${minutes}m`;
   };
 
-  // Calculate map center from areas data - MUST be before any conditional returns
   const mapCenter: [number, number] = useMemo(() => {
     try {
       if (areasData && areasData.features && areasData.features.length > 0) {
         let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
         areasData.features.forEach((feature: any) => {
           if (feature.geometry && feature.geometry.coordinates) {
-            const coords = feature.geometry.coordinates[0]; // Polygon outer ring
+            const coords = feature.geometry.coordinates[0];
             coords.forEach(([lng, lat]: [number, number]) => {
               minLat = Math.min(minLat, lat);
               maxLat = Math.max(maxLat, lat);
@@ -231,16 +340,16 @@ const Game: React.FC = () => {
     } catch (err) {
       console.error('Error calculating map center:', err);
     }
-    return [52.3676, 4.9041]; // Fallback to Amsterdam
+    return [52.3676, 4.9041];
   }, [areasData]);
 
-  // Use local countdown for smooth display
   const displaySeconds = gameStatus?.is_paused
     ? (gameStatus.remaining_seconds ?? 0)
     : localSecondsLeft;
   const hours = Math.floor(displaySeconds / 3600);
   const minutes = Math.floor((displaySeconds % 3600) / 60);
   const seconds = displaySeconds % 60;
+
   const areasRenderKey = useMemo(
     () =>
       areasData?.features
@@ -252,34 +361,29 @@ const Game: React.FC = () => {
     [areasData]
   );
 
-  // Show loading state
   if (areasLoading || !gameStatus) {
-    return (
-      <div className="game-container">
-        <h2>Laden...</h2>
-      </div>
-    );
+    return <div className="game-container"><h2>Laden...</h2></div>;
   }
 
-  // Show error state
   if (areasError) {
-    return (
-      <div className="game-container">
-        <h2>Fout bij laden van het spel</h2>
-        <p>Ververs de pagina</p>
-      </div>
-    );
+    return <div className="game-container"><h2>Fout bij laden van het spel</h2><p>Ververs de pagina</p></div>;
   }
 
-  // Show message for non-admin users when game is not active
   if (!gameStatus?.is_active && !team?.is_admin) {
-    return (
-      <div className="game-container">
-        <h2>Spel niet actief</h2>
-        <p>Wacht tot een admin het spel start.</p>
-      </div>
-    );
+    return <div className="game-container"><h2>Spel niet actief</h2><p>Wacht tot een admin het spel start.</p></div>;
   }
+
+  const pendingRequest = tikkerStatus?.pending_request ?? null;
+
+  // Pending tag targeting THIS team
+  const incomingTag = team?.id && pendingRequest?.target_team_id === team.id ? pendingRequest : null;
+
+  // Pending tag sent by THIS team (tikker waiting for confirmation)
+  const outgoingTag = team?.id && tikkerStatus?.is_tikker && pendingRequest?.initiating_team_id === team.id
+    ? pendingRequest
+    : null;
+
+  const otherTeams = sessionTeams.filter((t) => t.id !== team?.id && !t.is_tikker);
 
   return (
     <div className="game-container">
@@ -290,34 +394,168 @@ const Game: React.FC = () => {
         </div>
         <div className="team-info" style={{ backgroundColor: team?.color }}>
           {team?.name}
+          {tikkerStatus?.is_tikker && <span style={{ marginLeft: '6px' }}>🏃</span>}
         </div>
       </div>
+
+      {/* GPS status indicator */}
+      {gameStatus?.is_active && (
+        <div style={{ fontSize: '12px', color: gpsStatus === 'active' ? '#2e7d32' : gpsStatus === 'denied' || gpsStatus === 'unavailable' ? '#c62828' : '#888', marginBottom: '6px', textAlign: 'center' }}>
+          {gpsStatus === 'waiting' && '📍 GPS ophalen…'}
+          {gpsStatus === 'active' && `📍 GPS actief (${ownPosition?.lat.toFixed(4)}, ${ownPosition?.lng.toFixed(4)})`}
+          {gpsStatus === 'denied' && '📍 GPS geweigerd — sta locatie toe in je browser'}
+          {gpsStatus === 'unavailable' && '📍 GPS niet beschikbaar in deze browser'}
+        </div>
+      )}
 
       {gameStatus?.is_paused && (
         <div style={{
           background: 'linear-gradient(135deg, #f7971e 0%, #ffd200 100%)',
-          color: '#333',
-          padding: '12px 20px',
-          borderRadius: '12px',
-          marginBottom: '12px',
-          textAlign: 'center',
-          fontWeight: 'bold',
-          fontSize: '1.05em',
+          color: '#333', padding: '12px 20px', borderRadius: '12px',
+          marginBottom: '12px', textAlign: 'center', fontWeight: 'bold', fontSize: '1.05em',
         }}>
           ⏸ Spel is gepauzeerd — wacht op de admin
         </div>
       )}
 
+      {/* Incoming tag confirmation banner */}
+      {incomingTag && (
+        <div style={{
+          background: 'linear-gradient(135deg, #e53935 0%, #c62828 100%)',
+          color: 'white', borderRadius: '12px', padding: '18px 20px',
+          marginBottom: '12px', textAlign: 'center',
+          boxShadow: '0 4px 15px rgba(229,57,53,0.5)',
+        }}>
+          <div style={{ fontSize: '1.3em', fontWeight: 'bold', marginBottom: '8px' }}>
+            🎯 Jullie zijn getikt door {incomingTag.initiating_team_name}!
+          </div>
+          <p style={{ margin: '0 0 14px', opacity: 0.9, fontSize: '0.95em' }}>
+            Klopt dit? Bevestig dan hieronder.
+          </p>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <button
+              onClick={() => confirmMutation.mutate()}
+              disabled={confirmMutation.isPending || denyMutation.isPending}
+              style={{
+                background: 'white', color: '#c62828', border: 'none',
+                padding: '10px 22px', borderRadius: '8px', fontWeight: 'bold',
+                fontSize: '1em', cursor: 'pointer',
+              }}
+            >
+              Ja, wij zijn getikt
+            </button>
+            <button
+              onClick={() => denyMutation.mutate()}
+              disabled={confirmMutation.isPending || denyMutation.isPending}
+              style={{
+                background: 'rgba(255,255,255,0.2)', color: 'white', border: '2px solid white',
+                padding: '10px 22px', borderRadius: '8px', fontWeight: 'bold',
+                fontSize: '1em', cursor: 'pointer',
+              }}
+            >
+              Nee, klopt niet
+            </button>
+          </div>
+        </div>
+      )}
 
-      <MapContainer
-        center={mapCenter}
-        zoom={13}
-        style={{ height: '400px', width: '100%' }}
-      >
+      {/* Outgoing tag: tikker waiting for target confirmation */}
+      {outgoingTag && (
+        <div style={{
+          background: '#e8f5e9', border: '1px solid #4caf50',
+          borderRadius: '10px', padding: '12px 16px', marginBottom: '10px',
+          fontSize: '0.9em', textAlign: 'center',
+        }}>
+          ⏳ Wacht op bevestiging van <strong>{outgoingTag.target_team_name}</strong>…
+        </div>
+      )}
+
+      {/* Tikker tag panel */}
+      {tikkerStatus?.is_tikker && !outgoingTag && (
+        <div style={{
+          background: 'linear-gradient(135deg, #ff6f00 0%, #ff8f00 100%)',
+          color: 'white', borderRadius: '12px', padding: '14px 18px', marginBottom: '12px',
+        }}>
+          <div style={{ fontWeight: 'bold', fontSize: '1.05em', marginBottom: '8px' }}>
+            🏃 Jij bent de tikker!
+          </div>
+          {!showTagPanel ? (
+            <button
+              onClick={() => setShowTagPanel(true)}
+              style={{
+                background: 'white', color: '#e65100', border: 'none',
+                padding: '8px 18px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer',
+              }}
+            >
+              Ik heb een team getikt!
+            </button>
+          ) : (
+            <div>
+              <p style={{ margin: '0 0 10px', fontSize: '0.9em', opacity: 0.9 }}>
+                Welk team heb je getikt?
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {otherTeams.length === 0 ? (
+                  <p style={{ margin: 0, opacity: 0.8, fontSize: '0.9em' }}>Geen andere teams gevonden.</p>
+                ) : (
+                  otherTeams.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => tagMutation.mutate(t.id)}
+                      disabled={tagMutation.isPending}
+                      style={{
+                        background: t.color, color: 'white', border: 'none',
+                        padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold',
+                        cursor: 'pointer', textAlign: 'left', fontSize: '0.95em',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                      }}
+                    >
+                      {t.name}
+                    </button>
+                  ))
+                )}
+              </div>
+              <button
+                onClick={() => setShowTagPanel(false)}
+                style={{
+                  marginTop: '10px', background: 'transparent', color: 'white',
+                  border: '1px solid rgba(255,255,255,0.6)', padding: '6px 14px',
+                  borderRadius: '6px', cursor: 'pointer', fontSize: '0.85em',
+                }}
+              >
+                Annuleren
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <MapContainer center={mapCenter} zoom={13} style={{ height: '400px', width: '100%' }}>
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
+        {/* Own position marker — visible to everyone */}
+        {ownPosition && (
+          <Marker
+            position={[ownPosition.lat, ownPosition.lng]}
+            icon={createColorMarker(team?.color ?? '#667eea', `${team?.name} (jij)`)}
+          >
+            <Popup>{team?.name} (jij)</Popup>
+          </Marker>
+        )}
+
+        {/* All team markers — tikker only */}
+        {tikkerStatus?.is_tikker && teamLocations.map((loc) => (
+          <Marker
+            key={loc.team_id}
+            position={[loc.latitude, loc.longitude]}
+            icon={createColorMarker(loc.team_color, loc.team_name)}
+          >
+            <Popup>{loc.team_name}</Popup>
+          </Marker>
+        ))}
+
         {areasData && (
           <GeoJSON
             key={areasRenderKey}
@@ -340,15 +578,15 @@ const Game: React.FC = () => {
                   <p style="margin: 4px 0; font-size: 0.9em;">${popupDesc}</p>
                   <p style="margin: 4px 0; font-size: 0.85em; color: #667eea;">📍 Tik op "Selecteer gebied" voor de locatie.</p>
                   <p style="margin: 4px 0;"><strong>Mode:</strong> ${modeEmoji} ${feature.properties.challenge?.mode === 'LAST_APPROVED_WINS' ? 'Laatst goedgekeurd wint' : 'Hoogste score wint'}</p>
-                  ${feature.properties.ownership?.owner_team_name 
+                  ${feature.properties.ownership?.owner_team_name
                     ? `<p style="margin: 4px 0;"><strong>Eigenaar:</strong> <span style="color: ${feature.properties.ownership.owner_team_color}; font-weight: bold;">${feature.properties.ownership.owner_team_name}</span></p>
-                       <p style="margin: 4px 0;"><strong>In bezit sinds:</strong> ${formatOwnedTime(feature.properties.ownership.owned_seconds)}</p>` 
+                       <p style="margin: 4px 0;"><strong>In bezit sinds:</strong> ${formatOwnedTime(feature.properties.ownership.owned_seconds)}</p>`
                     : '<p style="margin: 4px 0; color: #999;">Nog geen eigenaar</p>'}
                   ${feature.properties.ownership?.current_high_score !== null
                     ? `<p style="margin: 4px 0;"><strong>Top score:</strong> ${feature.properties.ownership.current_high_score} punten</p>`
                     : ''}
                   ${cooldownTime ? `<p style="margin: 4px 0; color: red;"><strong>⏱️ Cooldown:</strong> ${cooldownTime}</p>` : ''}
-                  <button onclick="document.dispatchEvent(new CustomEvent('selectArea', {detail: ${feature.properties.id}}))" 
+                  <button onclick="document.dispatchEvent(new CustomEvent('selectArea', {detail: ${feature.properties.id}}))"
                     style="margin-top: 8px; padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">
                     Selecteer gebied
                   </button>
@@ -366,7 +604,6 @@ const Game: React.FC = () => {
             const area = areasData?.features.find((f) => f.properties.id === selectedAreaId)?.properties;
             return (
               <>
-                {/* Gebied + opdrachttitel in paarse header */}
                 <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', borderRadius: '12px', padding: '16px 20px', marginBottom: '0' }}>
                   <div style={{ fontSize: '0.8em', opacity: 0.8, marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Geselecteerd gebied</div>
                   <h3 style={{ margin: '0 0 8px 0', fontSize: '1.3em' }}>{area?.name}</h3>
@@ -381,19 +618,12 @@ const Game: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Prominent ownership badge */}
                 {area?.ownership?.owner_team_name ? (
                   <div style={{
-                    background: area.ownership.owner_team_color,
-                    color: 'white',
-                    padding: '10px 20px',
-                    borderRadius: '0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    fontSize: '0.95em',
-                    fontWeight: 'bold',
-                    textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                    background: area.ownership.owner_team_color, color: 'white',
+                    padding: '10px 20px', borderRadius: '0',
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    fontSize: '0.95em', fontWeight: 'bold', textShadow: '0 1px 2px rgba(0,0,0,0.3)',
                   }}>
                     <span style={{ fontSize: '1.3em' }}>👑</span>
                     <span>In bezit van {area.ownership.owner_team_name}</span>
@@ -402,18 +632,11 @@ const Game: React.FC = () => {
                     </span>
                   </div>
                 ) : (
-                  <div style={{
-                    background: '#e8f5e9',
-                    color: '#2e7d32',
-                    padding: '8px 20px',
-                    fontSize: '0.88em',
-                    fontWeight: 'bold',
-                  }}>
+                  <div style={{ background: '#e8f5e9', color: '#2e7d32', padding: '8px 20px', fontSize: '0.88em', fontWeight: 'bold' }}>
                     Nog geen eigenaar — wees de eerste!
                   </div>
                 )}
 
-                {/* Beschrijving in apart wit blok eronder — donkere tekst voor leesbaarheid */}
                 {area?.challenge?.description && (() => {
                   const desc = area.challenge.description;
                   const urlMatch = desc.match(/https:\/\/maps\.google\.com\/[^\s)]+/);
@@ -427,18 +650,7 @@ const Game: React.FC = () => {
                           href={mapsUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{
-                            display: 'block',
-                            marginTop: '14px',
-                            padding: '11px 16px',
-                            background: '#4285f4',
-                            color: 'white',
-                            borderRadius: '8px',
-                            textDecoration: 'none',
-                            fontWeight: 'bold',
-                            textAlign: 'center',
-                            fontSize: '0.95em',
-                          }}
+                          style={{ display: 'block', marginTop: '14px', padding: '11px 16px', background: '#4285f4', color: 'white', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', textAlign: 'center', fontSize: '0.95em' }}
                         >
                           📍 Open locatie in Google Maps
                         </a>
@@ -446,29 +658,18 @@ const Game: React.FC = () => {
                     </div>
                   );
                 })()}
-          
+
                 {isCooldownActive(selectedAreaId) && (
                   <div style={{
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    padding: '20px',
-                    borderRadius: '12px',
-                    marginTop: '15px',
-                    marginBottom: '15px',
-                    textAlign: 'center',
-                    border: '3px solid #764ba2',
-                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
+                    color: 'white', padding: '20px', borderRadius: '12px',
+                    marginTop: '15px', marginBottom: '15px', textAlign: 'center',
+                    border: '3px solid #764ba2', boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
                   }}>
                     <div style={{ fontSize: '48px', marginBottom: '10px' }}>⏱️</div>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>
-                      Cooldown Actief
-                    </div>
-                    <div style={{ fontSize: '32px', fontWeight: 'bold', letterSpacing: '2px' }}>
-                      {getCooldownTime(selectedAreaId)}
-                    </div>
-                    <div style={{ fontSize: '14px', marginTop: '10px', opacity: 0.9 }}>
-                      Je kunt over deze tijd weer een nieuwe poging doen
-                    </div>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>Cooldown Actief</div>
+                    <div style={{ fontSize: '32px', fontWeight: 'bold', letterSpacing: '2px' }}>{getCooldownTime(selectedAreaId)}</div>
+                    <div style={{ fontSize: '14px', marginTop: '10px', opacity: 0.9 }}>Je kunt over deze tijd weer een nieuwe poging doen</div>
                   </div>
                 )}
               </>
@@ -476,13 +677,7 @@ const Game: React.FC = () => {
           })()}
 
           <form onSubmit={handleSubmit}>
-            <div style={{
-              background: '#fff3cd',
-              padding: '12px',
-              borderRadius: '8px',
-              marginBottom: '15px',
-              border: '2px solid #ffc107'
-            }}>
+            <div style={{ background: '#fff3cd', padding: '12px', borderRadius: '8px', marginBottom: '15px', border: '2px solid #ffc107' }}>
               <p style={{ margin: 0, fontSize: '14px', color: '#856404' }}>
                 ℹ️ <strong>Verplicht:</strong> Voeg minimaal een foto of video toe
               </p>
@@ -499,33 +694,36 @@ const Game: React.FC = () => {
               />
             </div>
 
-            {areasData?.features.find((f) => f.properties.id === selectedAreaId)?.properties.challenge?.mode === 'HIGHEST_SCORE_WINS' && (
-              <div className="form-group">
-                <label>Score *</label>
-                <input
-                  type="number"
-                  value={submissionScore}
-                  onChange={(e) => setSubmissionScore(Number(e.target.value))}
-                  min="0"
-                  step="1"
-                  required
-                  disabled={isCooldownActive(selectedAreaId)}
-                  placeholder="Bijv. 4 biertjes = score 4"
-                />
-                <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-                  De admin beoordeelt of je score correct is
-                </p>
-              </div>
-            )}
+            {areasData?.features.find((f) => f.properties.id === selectedAreaId)?.properties.challenge?.mode === 'HIGHEST_SCORE_WINS' && (() => {
+              const scoreDesc = areasData.features.find((f) => f.properties.id === selectedAreaId)?.properties.challenge?.score_description;
+              return (
+                <div className="form-group">
+                  <label>Score *</label>
+                  {scoreDesc && (
+                    <p style={{ fontSize: '13px', color: '#444', marginBottom: '6px', marginTop: '2px' }}>
+                      {scoreDesc}
+                    </p>
+                  )}
+                  <input
+                    type="number"
+                    value={submissionScore ?? ''}
+                    onChange={(e) => setSubmissionScore(e.target.value === '' ? null : Number(e.target.value))}
+                    min="0"
+                    step="1"
+                    disabled={isCooldownActive(selectedAreaId)}
+                    placeholder="Vul hier je score in"
+                  />
+                </div>
+              );
+            })()}
 
             <div className="form-group">
-              <label>Foto's / Video's <span style={{color: 'red'}}>*</span></label>
+              <label>Foto's / Video's <span style={{ color: 'red' }}>*</span></label>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
                 <label
                   className="btn-primary"
                   style={{
-                    flex: 1,
-                    textAlign: 'center',
+                    flex: 1, textAlign: 'center',
                     cursor: isCooldownActive(selectedAreaId) ? 'not-allowed' : 'pointer',
                     opacity: isCooldownActive(selectedAreaId) ? 0.5 : 1,
                     pointerEvents: isCooldownActive(selectedAreaId) ? 'none' : 'auto',
@@ -577,21 +775,15 @@ const Game: React.FC = () => {
                 <div style={{ background: '#e0e0e0', borderRadius: '6px', height: '8px', overflow: 'hidden' }}>
                   <div style={{
                     background: 'linear-gradient(90deg, #667eea, #764ba2)',
-                    height: '100%',
-                    width: `${uploadProgress}%`,
-                    transition: 'width 0.2s ease',
-                    borderRadius: '6px',
+                    height: '100%', width: `${uploadProgress}%`,
+                    transition: 'width 0.2s ease', borderRadius: '6px',
                   }} />
                 </div>
               </div>
             )}
 
             <div className="form-actions">
-              <button
-                type="button"
-                onClick={() => setSelectedAreaId(null)}
-                className="btn-secondary"
-              >
+              <button type="button" onClick={() => setSelectedAreaId(null)} className="btn-secondary">
                 Annuleren
               </button>
               <button

@@ -218,6 +218,16 @@ const Admin: React.FC = () => {
     },
   });
 
+  const setTikkerMutation = useMutation({
+    mutationFn: (teamId: number) => apiClient.setTikker(teamId),
+    onSuccess: (_, teamId) => {
+      const name = sessionTeams.find((t) => t.id === teamId)?.name ?? 'Team';
+      showToast(`${name} is nu de tikker`, 'success');
+      queryClient.invalidateQueries({ queryKey: ['sessionTeams', currentSession?.id] });
+    },
+    onError: () => showToast('Tikker instellen mislukt', 'error'),
+  });
+
   const exportMutation = useMutation({
     mutationFn: (sessionId: number) => apiClient.exportGameZip(sessionId),
     onSuccess: (blob) => {
@@ -473,24 +483,40 @@ const Admin: React.FC = () => {
             {sessionTeams.length > 0 && (
               <div style={{ background: 'white', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
                 <p style={{ marginBottom: '10px', fontWeight: 'bold' }}>Teams in dit spel:</p>
-                <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                  {sessionTeams.map((team) => (
-                    <li
-                      key={team.id}
-                      style={{
-                        backgroundColor: team.color,
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {sessionTeams.map((t) => (
+                    <div
+                      key={t.id}
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
+                    >
+                      <span style={{
+                        backgroundColor: t.color,
                         color: 'white',
-                        padding: '8px 16px',
+                        padding: '6px 14px',
                         borderRadius: '20px',
                         fontSize: '14px',
                         fontWeight: 'bold',
                         textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
-                      }}
-                    >
-                      {team.name}
-                    </li>
+                        flex: 1,
+                      }}>
+                        {t.is_tikker ? '🏃 ' : ''}{t.name}
+                      </span>
+                      {!t.is_tikker && (
+                        <button
+                          onClick={() => setTikkerMutation.mutate(t.id)}
+                          disabled={setTikkerMutation.isPending}
+                          style={{
+                            fontSize: '12px', padding: '5px 10px', borderRadius: '6px',
+                            border: '1px solid #ff8f00', background: 'white',
+                            color: '#e65100', cursor: 'pointer', whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Maak tikker
+                        </button>
+                      )}
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             )}
 

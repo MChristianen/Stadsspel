@@ -11,6 +11,7 @@ from app.db.models import (
     GameSession,
     Submission,
     TerritoryOwnership,
+    TikkerPeriod,
     Team,
 )
 
@@ -37,6 +38,41 @@ def _full_minutes_between(start: datetime, end: datetime) -> int:
     if end <= start:
         return 0
     return floor((end - start).total_seconds() / 60)
+
+
+def _effective_hold_minutes(
+    db: Session,
+    team_id: int,
+    game_session_id: int,
+    start: datetime,
+    end: datetime,
+) -> int:
+    """Full hold minutes after subtracting any tikker periods for this team."""
+    if end <= start:
+        return 0
+
+    total_seconds = (end - start).total_seconds()
+
+    periods = (
+        db.query(TikkerPeriod)
+        .filter(
+            TikkerPeriod.team_id == team_id,
+            TikkerPeriod.game_session_id == game_session_id,
+        )
+        .all()
+    )
+
+    tikker_seconds = 0.0
+    for period in periods:
+        p_start = period.started_at
+        p_end = period.ended_at if period.ended_at else end
+        overlap_start = max(p_start, start)
+        overlap_end = min(p_end, end)
+        if overlap_end > overlap_start:
+            tikker_seconds += (overlap_end - overlap_start).total_seconds()
+
+    effective_seconds = max(0.0, total_seconds - tikker_seconds)
+    return floor(effective_seconds / 60)
 
 
 def _get_or_create_points_row(
@@ -127,9 +163,9 @@ def update_ownership(
     ownership_changed = new_owner_id != previous_owner_id
 
     if ownership_changed:
-        # Bank hold points for previous owner up to transfer moment.
+        # Bank hold points for previous owner up to transfer moment (excluding tikker time).
         if previous_owner_id and ownership.captured_at:
-            minutes_held = _full_minutes_between(ownership.captured_at, effective_now)
+            minutes_held = _effective_hold_minutes(db, previous_owner_id, session.id, ownership.captured_at, effective_now)
             if minutes_held > 0:
                 previous_row = _get_or_create_points_row(
                     db=db,
@@ -225,7 +261,7 @@ def compute_team_scores(
             area = areas_by_id.get(ownership.area_id)
             if not area:
                 continue
-            held_minutes = _full_minutes_between(ownership.captured_at, effective_now)
+            held_minutes = _effective_hold_minutes(db, owner_id, session.id, ownership.captured_at, effective_now)
             if held_minutes > 0:
                 result[owner_id]["points"] += held_minutes * _effective_hold_rate(area)
 
