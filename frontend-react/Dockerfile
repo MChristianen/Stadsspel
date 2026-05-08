@@ -17,6 +17,7 @@ RUN npm run build
 
 # --- Production stage: just the static files ---
 FROM alpine:3.19
-RUN mkdir -p /dist
-COPY --from=build /app/dist /dist
-# This stage only holds static files; Caddy will serve them via a volume
+RUN mkdir -p /app/static /dist
+COPY --from=build /app/dist /app/static
+# On startup, copy from /app/static (inside image) to /dist (volume mount)
+CMD ["sh", "-c", "cp -r /app/static/. /dist/ && echo 'Frontend files copied'"]
