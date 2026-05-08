@@ -68,6 +68,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       name: response.team_name,
       color: response.team_color,
       is_admin: response.is_admin,
+      is_tikker: false,
       game_session_id: response.game_session_id,
       created_at: new Date().toISOString(),
     };
@@ -83,6 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       name: response.team_name,
       color: response.team_color,
       is_admin: response.is_admin,
+      is_tikker: false,
       game_session_id: response.game_session_id,
       created_at: new Date().toISOString(),
     };
