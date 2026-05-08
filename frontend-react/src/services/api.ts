@@ -23,6 +23,8 @@ import type {
   UpdateCityPointsConfigRequest,
   PublicResultsResponse,
   PublicMediaGalleryArea,
+  TikkerStatus,
+  TeamLocation,
 } from '../types/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -335,6 +337,47 @@ class ApiClient {
 
   async stopSession(sessionId: number): Promise<{ message: string }> {
     const response = await this.client.post(`/sessions/${sessionId}/stop`);
+    return response.data;
+  }
+
+  // Tikker endpoints
+  async getTikkerStatus(): Promise<TikkerStatus> {
+    const response = await this.client.get('/tikker/status');
+    return response.data;
+  }
+
+  async getTaggableTeams(): Promise<SessionTeam[]> {
+    const response = await this.client.get('/tikker/teams');
+    return response.data;
+  }
+
+  // Location endpoints
+  async updateLocation(latitude: number, longitude: number): Promise<void> {
+    await this.client.post('/locations/update', { latitude, longitude });
+  }
+
+  async getLocations(): Promise<TeamLocation[]> {
+    const response = await this.client.get('/locations');
+    return response.data;
+  }
+
+  async tagTeam(targetTeamId: number): Promise<{ message: string }> {
+    const response = await this.client.post('/tikker/tag', { target_team_id: targetTeamId });
+    return response.data;
+  }
+
+  async confirmTag(): Promise<{ message: string }> {
+    const response = await this.client.post('/tikker/confirm');
+    return response.data;
+  }
+
+  async denyTag(): Promise<{ message: string }> {
+    const response = await this.client.post('/tikker/deny');
+    return response.data;
+  }
+
+  async setTikker(teamId: number): Promise<{ message: string }> {
+    const response = await this.client.post(`/admin/teams/${teamId}/set-tikker`);
     return response.data;
   }
 

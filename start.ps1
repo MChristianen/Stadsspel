@@ -30,6 +30,24 @@ Write-Host "      Migrations completed" -ForegroundColor Green
 # 3. Seed Database
 Write-Host ""
 Write-Host "[3/5] Seeding database..." -ForegroundColor Green
+
+# Prompt for admin password if not already set in environment or .env
+$envFile = "$ROOT\backend\.env"
+$adminPwAlreadySet = $false
+if (Test-Path $envFile) {
+    $envLines = Get-Content $envFile
+    $adminPwAlreadySet = ($envLines | Where-Object { $_ -match "^ADMIN_PASSWORD=.+" }).Count -gt 0
+}
+if (-not $adminPwAlreadySet -and -not $env:ADMIN_PASSWORD) {
+    Write-Host ""
+    Write-Host "  Admin wachtwoord instellen" -ForegroundColor Yellow
+    Write-Host "  Druk Enter om automatisch een wachtwoord te genereren" -ForegroundColor Gray
+    $adminInput = Read-Host "  Wachtwoord"
+    if ($adminInput) {
+        $env:ADMIN_PASSWORD = $adminInput
+    }
+}
+
 poetry run python -m app.seeds.seed_required_data
 
 # 4. Start Backend
@@ -57,8 +75,7 @@ Write-Host "  Backend:   http://localhost:8000" -ForegroundColor Gray
 Write-Host "  Frontend:  http://localhost:3000" -ForegroundColor Gray
 Write-Host ""
 Write-Host "Admin Login:" -ForegroundColor Yellow
-Write-Host "  Username: admin" -ForegroundColor White
-Write-Host "  Password: admin" -ForegroundColor White
+Write-Host "  Username: admin (zie backend logs voor wachtwoord)" -ForegroundColor White
 Write-Host ""
 Write-Host "Next:" -ForegroundColor White
 Write-Host "  1. Open http://localhost:3000" -ForegroundColor Gray

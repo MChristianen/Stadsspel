@@ -174,9 +174,12 @@ async def create_submission(
     
     if challenge.mode == ChallengeMode.HIGHEST_SCORE_WINS:
         if score is None or score < 0:
+            detail = "Je score ontbreekt"
+            if challenge.score_description:
+                detail += f" — {challenge.score_description}"
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Score is verplicht voor deze opdracht (minimaal 0)"
+                detail=detail,
             )
     
     # Create submission

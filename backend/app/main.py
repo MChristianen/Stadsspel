@@ -10,7 +10,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.logging import logger
-from app.api import auth, game, areas, submissions, leaderboard, admin, sessions, join, results, results_media
+from app.api import auth, game, areas, submissions, leaderboard, admin, sessions, join, results, results_media, tikker, locations
 from app.db.session import SessionLocal
 
 # Create FastAPI app
@@ -75,6 +75,8 @@ app.include_router(sessions.router, prefix="/api")
 app.include_router(join.router, prefix="/api")
 app.include_router(results.router, prefix="/api")
 app.include_router(results_media.router, prefix="/api")
+app.include_router(tikker.router, prefix="/api")
+app.include_router(locations.router, prefix="/api")
 
 # Mount media directory for local storage
 if settings.MEDIA_STORAGE_TYPE == "local":

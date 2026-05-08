@@ -5,6 +5,7 @@ export interface Team {
   name: string;
   color: string;
   is_admin: boolean;
+  is_tikker: boolean;
   game_session_id?: number;
   created_at: string;
 }
@@ -48,6 +49,7 @@ export interface Area {
     title: string;
     description: string;
     time_limit_minutes?: number | null;
+    score_description?: string | null;
   } | null;
   ownership: {
     owner_team_id: number;
@@ -89,6 +91,7 @@ export interface Submission {
   challenge_title: string;
   text: string;
   score: number | null;
+  status: string;
   media: SubmissionMedia[];
   created_at: string;
 }
@@ -226,7 +229,25 @@ export interface SessionTeam {
   id: number;
   name: string;
   color: string;
+  is_tikker: boolean;
   created_at: string;
+}
+
+export interface TikkerPendingRequest {
+  id: number;
+  initiating_team_id: number;
+  initiating_team_name: string | null;
+  target_team_id: number;
+  target_team_name: string | null;
+  created_at: string;
+}
+
+export interface TikkerStatus {
+  tikker_team_id: number | null;
+  tikker_team_name: string | null;
+  tikker_team_color: string | null;
+  is_tikker: boolean;
+  pending_request: TikkerPendingRequest | null;
 }
 
 export interface PublicResultStanding {
@@ -259,6 +280,15 @@ export interface PublicResultsResponse {
   area_count: number;
   final_standings: PublicResultStanding[];
   points_history: PublicResultHistoryPoint[];
+}
+
+export interface TeamLocation {
+  team_id: number;
+  team_name: string;
+  team_color: string;
+  latitude: number;
+  longitude: number;
+  updated_at: string;
 }
 
 export interface PublicMediaGalleryItem {

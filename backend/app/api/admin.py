@@ -9,7 +9,7 @@ from typing import List
 from app.db.session import get_db
 from app.db.models import (
     Submission, SubmissionMedia, Team, Approval,
-    SubmissionStatus
+    SubmissionStatus, TikkerPeriod
 )
 from app.core.security import get_current_admin
 from app.services.ownership import update_ownership
@@ -189,6 +189,54 @@ def reject_submission(
         "message": "Submission rejected",
         "submission_id": submission.id
     }
+
+
+@router.post("/teams/{team_id}/set-tikker")
+def set_tikker(
+    team_id: int,
+    db: Session = Depends(get_db),
+    admin: Team = Depends(get_current_admin),
+):
+    """Assign the tikker role to a team. Removes it from any current tikker first."""
+    team = db.query(Team).filter(Team.id == team_id, Team.is_admin == False).first()
+    if not team:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team niet gevonden")
+
+    if not team.game_session_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Team zit niet in een spelsessie")
+
+    now = datetime.utcnow()
+
+    current_tikker = (
+        db.query(Team)
+        .filter(Team.game_session_id == team.game_session_id, Team.is_tikker == True)
+        .first()
+    )
+    if current_tikker and current_tikker.id != team_id:
+        open_period = (
+            db.query(TikkerPeriod)
+            .filter(
+                TikkerPeriod.team_id == current_tikker.id,
+                TikkerPeriod.game_session_id == team.game_session_id,
+                TikkerPeriod.ended_at.is_(None),
+            )
+            .first()
+        )
+        if open_period:
+            open_period.ended_at = now
+        current_tikker.is_tikker = False
+
+    if not team.is_tikker:
+        team.is_tikker = True
+        db.add(TikkerPeriod(
+            team_id=team.id,
+            game_session_id=team.game_session_id,
+            started_at=now,
+        ))
+
+    db.commit()
+    logger.info(f"Admin {admin.name} set tikker to team {team.name}")
+    return {"message": f"{team.name} is nu de tikker"}
 
 
 @router.get("/export")

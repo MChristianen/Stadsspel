@@ -104,7 +104,8 @@ class Challenge(Base):
     mode = Column(Enum(ChallengeMode), nullable=False)
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=False)
-    time_limit_minutes = Column(Integer, nullable=True)  # Optional per-challenge time limit
+    time_limit_minutes = Column(Integer, nullable=True)
+    score_description = Column(Text, nullable=True)  # What the score represents for HIGHEST_SCORE_WINS
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     # Relationships
@@ -122,6 +123,7 @@ class Team(Base):
     password_hash = Column(String(255), nullable=False)
     color = Column(String(7), nullable=False)  # Hex color e.g. #FF5733
     is_admin = Column(Boolean, default=False, nullable=False, index=True)
+    is_tikker = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     # Relationships
@@ -219,6 +221,46 @@ class TerritoryOwnership(Base):
     # Relationships
     area = relationship("Area", back_populates="ownership")
     owner_team = relationship("Team", back_populates="owned_territories")
+
+
+class TikkerPeriod(Base):
+    """Tracks time intervals during which a team held the tikker role."""
+    __tablename__ = "tikker_periods"
+
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False, index=True)
+    game_session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False, index=True)
+    started_at = Column(DateTime, nullable=False)
+    ended_at = Column(DateTime, nullable=True)  # Null = still active tikker
+
+
+class TikkerTransferRequest(Base):
+    """Pending tag request from current tikker to a target team."""
+    __tablename__ = "tikker_transfer_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False, index=True)
+    initiating_team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    target_team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    status = Column(String(20), nullable=False, default="PENDING")  # PENDING | CONFIRMED | DENIED
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    resolved_at = Column(DateTime, nullable=True)
+
+
+class TeamLocation(Base):
+    """Live GPS location of a team during an active session."""
+    __tablename__ = "team_locations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, ForeignKey("teams.id", ondelete="CASCADE"), nullable=False, index=True)
+    game_session_id = Column(Integer, ForeignKey("game_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("team_id", "game_session_id", name="uq_team_location_per_session"),
+    )
 
 
 class AreaTeamPoints(Base):
