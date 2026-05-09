@@ -676,6 +676,18 @@ const Game: React.FC = () => {
             );
           })()}
 
+          {tikkerStatus?.is_tikker ? (
+            <div style={{
+              background: 'linear-gradient(135deg, #e65100 0%, #bf360c 100%)',
+              color: 'white', padding: '20px', borderRadius: '12px',
+              marginTop: '15px', textAlign: 'center',
+              border: '3px solid #bf360c',
+            }}>
+              <div style={{ fontSize: '40px', marginBottom: '10px' }}>🏃</div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '6px' }}>Jij bent de tikker!</div>
+              <div style={{ fontSize: '14px', opacity: 0.9 }}>Als tikker kun je geen opdrachten indienen.</div>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit}>
             <div style={{ background: '#fff3cd', padding: '12px', borderRadius: '8px', marginBottom: '15px', border: '2px solid #ffc107' }}>
               <p style={{ margin: 0, fontSize: '14px', color: '#856404' }}>
@@ -795,6 +807,7 @@ const Game: React.FC = () => {
               </button>
             </div>
           </form>
+          )}
         </div>
       )}
     </div>

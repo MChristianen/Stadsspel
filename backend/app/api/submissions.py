@@ -125,6 +125,13 @@ async def create_submission(
             detail="You are not part of any game session"
         )
     
+    # Tikkers mogen geen opdrachten indienen
+    if team.is_tikker:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Als tikker kun je geen opdrachten indienen"
+        )
+
     # Check if game session is active
     from app.db.models import GameSession, Area
     session = db.query(GameSession).filter(GameSession.id == team.game_session_id).first()
