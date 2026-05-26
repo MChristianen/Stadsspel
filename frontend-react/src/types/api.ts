@@ -175,6 +175,10 @@ export interface City {
   id: number;
   name: string;
   area_count: number;
+  proximity_enabled: boolean;
+  proximity_radius: number;
+  default_capture_points: number;
+  default_hold_points_per_minute: number;
 }
 
 export interface CityPointsConfigArea {
@@ -207,6 +211,10 @@ export interface UpdateCityPointsConfigRequest {
 export interface CreateSessionRequest {
   city_id: number;
   duration_minutes: number;
+  proximity_enabled: boolean;
+  proximity_radius: number;
+  default_capture_points: number;
+  default_hold_points_per_minute: number;
 }
 
 export interface SessionResponse {

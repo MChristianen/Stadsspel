@@ -1,14 +1,16 @@
 """Submissions endpoints."""
+import math
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from pydantic import BaseModel
 from typing import List
+from geoalchemy2.shape import to_shape
 
 from app.db.session import get_db
 from app.db.models import (
-    Submission, SubmissionMedia, Team, Challenge, GameSession, Area,
+    Submission, SubmissionMedia, Team, Challenge, City, GameSession, Area,
     SubmissionStatus, MediaType, ChallengeMode
 )
 from app.core.security import get_current_team
@@ -19,10 +21,20 @@ from app.core.logging import logger
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 
+
+def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Return distance in meters between two GPS coordinates."""
+    R = 6_371_000
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return 2 * R * math.asin(math.sqrt(a))
+
 MAX_PHOTO_FILES = 5
 MAX_VIDEO_FILES = 2
 MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024
-MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024
+MAX_VIDEO_SIZE_BYTES = 150 * 1024 * 1024  # 150MB: ruim voor 30-sec smartphone video op 1080p
 ALLOWED_PHOTO_TYPES = {"image/jpeg", "image/png", "image/webp"}
 ALLOWED_VIDEO_TYPES = {"video/mp4", "video/webm", "video/quicktime"}
 
@@ -83,6 +95,8 @@ async def create_submission(
     area_id: int = Form(...),
     text: str = Form(default=""),
     score: float | None = Form(None),
+    latitude: float | None = Form(None),
+    longitude: float | None = Form(None),
     photos: List[UploadFile] = File(default=[]),
     videos: List[UploadFile] = File(default=[]),
     db: Session = Depends(get_db),
@@ -154,7 +168,24 @@ async def create_submission(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This area does not belong to your game session's city"
         )
-    
+
+    # Nabijheidseis: validate proximity if the city requires it (admins exempt)
+    if not team.is_admin and area.challenge_point is not None:
+        city = db.query(City).filter(City.id == session.city_id).first()
+        if city and city.proximity_enabled:
+            if latitude is None or longitude is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="GPS-locatie is vereist om een opdracht in te dienen"
+                )
+            point = to_shape(area.challenge_point)
+            distance = haversine_distance(latitude, longitude, point.y, point.x)
+            if distance > city.proximity_radius:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Je bent te ver van het opdrachtpunt ({int(distance)}m). Kom binnen {city.proximity_radius}m om in te dienen."
+                )
+
     now = datetime.utcnow()
     if now >= session.end_time:
         raise HTTPException(

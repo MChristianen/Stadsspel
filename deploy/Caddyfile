@@ -1,6 +1,9 @@
 {$DOMAIN} {
-    # API requests → backend
+    # API requests → backend (verhoogde bodylimiet voor video-uploads)
     handle /api/* {
+        request_body {
+            max_size 200MB
+        }
         reverse_proxy backend:8000
     }
 

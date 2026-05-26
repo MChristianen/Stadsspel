@@ -8,7 +8,7 @@ from geoalchemy2.shape import to_shape
 from shapely.geometry import mapping
 
 from app.db.session import get_db
-from app.db.models import Area, Challenge, Team, GameSession
+from app.db.models import Area, Challenge, City, Team, GameSession
 from app.core.security import get_current_team
 from app.services.ownership import get_area_ownership
 
@@ -19,8 +19,8 @@ router = APIRouter(prefix="/areas", tags=["areas"])
 class ChallengeInfo(BaseModel):
     id: int
     mode: str
-    title: str
-    description: str
+    title: str | None
+    description: str | None
     time_limit_minutes: int | None
     score_description: str | None
 
@@ -81,25 +81,34 @@ def get_areas_geojson(
 
     areas = db.query(Area).filter(Area.city_id == session.city_id).all()
     include_live_ownership = session.is_active or session.is_finished
-    
+
+    city = db.query(City).filter(City.id == session.city_id).first()
+    proximity_enabled = city.proximity_enabled if city else False
+    proximity_radius = city.proximity_radius if city else 150
+
     features = []
     for area in areas:
         # Convert PostGIS geometry to GeoJSON
         polygon_shape = to_shape(area.geom)
         polygon_geojson = mapping(polygon_shape)
-        
+
         center_shape = to_shape(area.center_point)
         center_geojson = mapping(center_shape)
-        
+
+        challenge_point_geojson = None
+        if area.challenge_point is not None:
+            challenge_point_geojson = mapping(to_shape(area.challenge_point))
+
         # Get ownership
         ownership = get_area_ownership(db, area.id) if include_live_ownership else None
         owner_team = None
         if ownership and ownership.owner_team_id:
             owner_team = db.query(Team).filter(Team.id == ownership.owner_team_id).first()
-        
-        # Get challenge
+
+        # Get challenge — tikkers see the point on the map but not the text
         challenge = db.query(Challenge).filter(Challenge.area_id == area.id).first()
-        
+        reveal_text = not team.is_tikker
+
         feature = {
             "type": "Feature",
             "geometry": polygon_geojson,
@@ -108,12 +117,15 @@ def get_areas_geojson(
                 "name": area.name,
                 "description": area.description,
                 "center": center_geojson,
+                "challenge_point": challenge_point_geojson,
+                "proximity_enabled": proximity_enabled,
+                "proximity_radius": proximity_radius,
                 "challenge": {
                     "id": challenge.id,
                     "mode": challenge.mode.value,
-                    "title": challenge.title,
-                    "description": challenge.description,
-                    "score_description": challenge.score_description,
+                    "title": challenge.title if reveal_text else None,
+                    "description": challenge.description if reveal_text else None,
+                    "score_description": challenge.score_description if reveal_text else None,
                 } if challenge else None,
                 "ownership": {
                     "owner_team_id": ownership.owner_team_id if ownership else None,
@@ -137,7 +149,7 @@ def get_areas_geojson(
             }
         }
         features.append(feature)
-    
+
     return AreasGeoJSON(features=features)
 
 
@@ -176,6 +188,9 @@ def get_area_detail(
     center_shape = to_shape(area.center_point)
     center_geojson = mapping(center_shape)
     
+    # Tikkers see the map but not the challenge text
+    reveal_text = not team.is_tikker
+
     return AreaResponse(
         id=area.id,
         name=area.name,
@@ -185,10 +200,10 @@ def get_area_detail(
         challenge=ChallengeInfo(
             id=challenge.id,
             mode=challenge.mode.value,
-            title=challenge.title,
-            description=challenge.description,
+            title=challenge.title if reveal_text else None,
+            description=challenge.description if reveal_text else None,
             time_limit_minutes=challenge.time_limit_minutes,
-            score_description=challenge.score_description,
+            score_description=challenge.score_description if reveal_text else None,
         ),
         ownership=OwnershipInfo(
             owner_team_id=ownership.owner_team_id if ownership else None,

@@ -23,6 +23,10 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 class CreateSessionRequest(BaseModel):
     city_id: int
     duration_minutes: int
+    proximity_enabled: bool = False
+    proximity_radius: int = Field(default=150, ge=1)
+    default_capture_points: float = Field(default=60.0, ge=0)
+    default_hold_points_per_minute: float = Field(default=1.0, ge=0)
 
 
 class TeamInfo(BaseModel):
@@ -59,6 +63,10 @@ class CityInfo(BaseModel):
     name: str
     description: str | None
     area_count: int
+    proximity_enabled: bool
+    proximity_radius: int
+    default_capture_points: float
+    default_hold_points_per_minute: float
 
 
 class AreaPointsConfig(BaseModel):
@@ -159,7 +167,11 @@ def list_cities(
             id=city.id,
             name=city.name,
             description=city.description,
-            area_count=area_count
+            area_count=area_count,
+            proximity_enabled=city.proximity_enabled,
+            proximity_radius=city.proximity_radius,
+            default_capture_points=float(city.default_capture_points),
+            default_hold_points_per_minute=float(city.default_hold_points_per_minute),
         ))
     
     return result
@@ -230,7 +242,14 @@ def create_session(
     area_count = db.query(Area).filter(Area.city_id == data.city_id).count()
     if area_count == 0:
         raise HTTPException(status_code=400, detail="City has no areas configured")
-    
+
+    # Apply per-game settings to the city
+    city.proximity_enabled = data.proximity_enabled
+    city.proximity_radius = data.proximity_radius
+    city.default_capture_points = data.default_capture_points
+    city.default_hold_points_per_minute = data.default_hold_points_per_minute
+    db.commit()
+
     # Generate unique join code
     while True:
         join_code = generate_join_code()
@@ -300,11 +319,12 @@ def list_sessions(
             for t in teams
         ]
 
-        # Calculate is_finished dynamically based on end_time
-        is_finished = session.end_time is not None and now >= session.end_time
-        
+        # Session is finished when explicitly stopped OR when end_time has passed.
+        time_expired = session.end_time is not None and now >= session.end_time
+        is_finished = session.is_finished or time_expired
+
         # Update database if session should be finished but isn't marked as such
-        if is_finished and not session.is_finished:
+        if time_expired and not session.is_finished:
             session.is_finished = True
             session.is_active = False
             db.commit()
@@ -391,6 +411,8 @@ def start_session(
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
+    if session.is_finished:
+        raise HTTPException(status_code=400, detail="Session is already finished")
     if session.is_active:
         raise HTTPException(status_code=400, detail="Session already started")
     

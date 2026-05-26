@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './components/Toast';
 import ProtectedRoute from './components/ProtectedRoute';
+import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Join from './pages/Join';
@@ -25,32 +26,33 @@ const queryClient = new QueryClient({
   },
 });
 
+const HomeRoute: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) return <Landing />;
+  return <Game />;
+};
+
 const Navigation: React.FC = () => {
   const { isAuthenticated, isAdmin, team, logout } = useAuth();
+
+  if (!isAuthenticated) return null;
 
   return (
     <nav className="main-nav">
       <div className="nav-links">
         <Link to="/uitleg">Speluitleg</Link>
-        {isAuthenticated && (
-          <>
-            {isAdmin && <Link to="/admin">Admin</Link>}
-            <Link to="/">Spel</Link>
-            <Link to="/leaderboard">Scorebord</Link>
-          </>
-        )}
-        {!isAuthenticated && <Link to="/login">Inloggen</Link>}
+        {isAdmin && <Link to="/admin">Admin</Link>}
+        <Link to="/">Spel</Link>
+        <Link to="/leaderboard">Scorebord</Link>
       </div>
-      {isAuthenticated && (
-        <div className="nav-user">
-          <span className="team-badge" style={{ backgroundColor: team?.color }}>
-            {team?.name}
-          </span>
-          <button onClick={logout} className="btn-logout">
-            Uitloggen
-          </button>
-        </div>
-      )}
+      <div className="nav-user">
+        <span className="team-badge" style={{ backgroundColor: team?.color }}>
+          {team?.name}
+        </span>
+        <button onClick={logout} className="btn-logout">
+          Uitloggen
+        </button>
+      </div>
     </nav>
   );
 };
@@ -80,14 +82,7 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-                  <Route
-                    path="/"
-                    element={
-                      <ProtectedRoute>
-                        <Game />
-                      </ProtectedRoute>
-                    }
-                  />
+                  <Route path="/" element={<HomeRoute />} />
                   <Route
                     path="/leaderboard"
                     element={
@@ -104,7 +99,7 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="*" element={<Navigate to="/uitleg" replace />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </main>
             </div>

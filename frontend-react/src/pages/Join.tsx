@@ -3,6 +3,79 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../services/api';
 import type { SessionResponse } from '../types/api';
 
+const PinEntry: React.FC = () => {
+  const navigate = useNavigate();
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const code = pin.trim().toUpperCase();
+    if (!code) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const session = await apiClient.getSession(code);
+      if (session.is_finished) {
+        navigate(`/results/${code}`, { replace: true });
+        return;
+      }
+      navigate(`/join/${code}`);
+    } catch {
+      setError('Ongeldige spelcode. Controleer de code en probeer opnieuw.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-container">
+      <div className="auth-card">
+        <h1>🏙️ Stadsspel</h1>
+        <h2>Neem deel</h2>
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="pin">Spelcode</label>
+            <input
+              type="text"
+              id="pin"
+              value={pin}
+              onChange={e => setPin(e.target.value.toUpperCase())}
+              placeholder="bijv. ABC123"
+              required
+              disabled={loading}
+              autoComplete="off"
+              autoFocus
+              maxLength={12}
+              style={{
+                fontSize: '1.75rem',
+                textAlign: 'center',
+                letterSpacing: '0.25em',
+                fontWeight: '700',
+                textTransform: 'uppercase',
+              }}
+            />
+          </div>
+
+          {error && <div className="error-message">{error}</div>}
+
+          <button type="submit" disabled={loading || !pin.trim()} className="btn-primary">
+            {loading ? 'Controleren...' : 'Doe mee'}
+          </button>
+        </form>
+
+        <p className="auth-link">
+          Al een account? <Link to="/login">Inloggen</Link>
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const Join: React.FC = () => {
   const { joinCode } = useParams<{ joinCode: string }>();
   const navigate = useNavigate();
@@ -34,22 +107,7 @@ const Join: React.FC = () => {
   }, [joinCode, navigate]);
 
   if (!joinCode) {
-    return (
-      <div className="auth-container">
-        <div className="auth-card">
-          <h1>🏙️ Stadsspel</h1>
-          <h2>Welkom!</h2>
-          
-          <p style={{ marginBottom: '30px', fontSize: '16px', lineHeight: '1.6' }}>
-            Welkom bij het Stadsspel! Je hebt een uitnodigingslink nodig om deel te nemen aan een spel.
-          </p>
-
-          <p className="auth-link">
-            Heb je al een account? <Link to="/login">Inloggen</Link>
-          </p>
-        </div>
-      </div>
-    );
+    return <PinEntry />;
   }
 
   if (loading) {

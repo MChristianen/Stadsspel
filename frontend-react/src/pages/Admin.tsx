@@ -17,6 +17,10 @@ const Admin: React.FC = () => {
 
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null);
   const [durationMinutes, setDurationMinutes] = useState(60);
+  const [proximityEnabled, setProximityEnabled] = useState(false);
+  const [proximityRadius, setProximityRadius] = useState(150);
+  const [capturePoints, setCapturePoints] = useState(60);
+  const [holdPointsPerMin, setHoldPointsPerMin] = useState(1.0);
   const [currentSession, setCurrentSession] = useState<SessionResponse | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(true);
   const [selectedAdditionalAdmins, setSelectedAdditionalAdmins] = useState<number[]>([]);
@@ -75,6 +79,16 @@ const Admin: React.FC = () => {
     }
   }, [cities, currentSession, configCityId]);
 
+  useEffect(() => {
+    if (!selectedCityId) return;
+    const city = cities.find((c) => c.id === selectedCityId);
+    if (!city) return;
+    setProximityEnabled(city.proximity_enabled);
+    setProximityRadius(city.proximity_radius);
+    setCapturePoints(city.default_capture_points);
+    setHoldPointsPerMin(city.default_hold_points_per_minute);
+  }, [selectedCityId, cities]);
+
   const { data: pointsConfig, isLoading: pointsConfigLoading } = useQuery<CityPointsConfig>({
     queryKey: ['cityPointsConfig', configCityId],
     queryFn: () => apiClient.getCityPointsConfig(configCityId!),
@@ -129,7 +143,7 @@ const Admin: React.FC = () => {
   });
 
   const createSessionMutation = useMutation({
-    mutationFn: (data: { city_id: number; duration_minutes: number }) => apiClient.createSession(data),
+    mutationFn: (data: { city_id: number; duration_minutes: number; proximity_enabled: boolean; proximity_radius: number; default_capture_points: number; default_hold_points_per_minute: number }) => apiClient.createSession(data),
     onSuccess: (session) => {
       setCurrentSession(session);
       setShowCreateForm(false);
@@ -158,6 +172,10 @@ const Admin: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['allSessions'] });
       queryClient.invalidateQueries({ queryKey: ['sessionTeams', currentSession?.id] });
       alert('Spel gestart!');
+    },
+    onError: (error: unknown) => {
+      const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      alert(detail ?? 'Kon het spel niet starten. Controleer de backend-logs.');
     },
   });
 
@@ -280,6 +298,10 @@ const Admin: React.FC = () => {
     createSessionMutation.mutate({
       city_id: selectedCityId,
       duration_minutes: durationMinutes,
+      proximity_enabled: proximityEnabled,
+      proximity_radius: proximityRadius,
+      default_capture_points: capturePoints,
+      default_hold_points_per_minute: holdPointsPerMin,
     });
   };
 
@@ -405,18 +427,14 @@ const Admin: React.FC = () => {
       {(showCreateForm || !currentSession) && (
         <div className="admin-section">
           <h2>Nieuw Spel Aanmaken</h2>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Kies een stad:</label>
+
+          {/* 1. Locatie */}
+          <div style={{ marginBottom: '24px' }}>
+            <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>📍 Locatie</p>
             <select
               value={selectedCityId || ''}
               onChange={(e) => setSelectedCityId(Number(e.target.value))}
-              style={{
-                width: '100%',
-                padding: '10px',
-                fontSize: '16px',
-                borderRadius: '4px',
-                border: '1px solid #ddd',
-              }}
+              style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '4px', border: '1px solid #ddd' }}
             >
               <option value="">-- Selecteer een stad --</option>
               {cities.map((city) => (
@@ -427,29 +445,83 @@ const Admin: React.FC = () => {
             </select>
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Speelduur (minuten):</label>
-            <input
-              type="number"
-              value={durationMinutes}
-              onChange={(e) => setDurationMinutes(Number(e.target.value))}
-              min="1"
-              style={{
-                width: '100%',
-                padding: '10px',
-                fontSize: '16px',
-                borderRadius: '4px',
-                border: '1px solid #ddd',
-              }}
-            />
+          {/* 2. Tijdsduur */}
+          <div style={{ marginBottom: '24px' }}>
+            <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>⏱️ Speelduur</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <input
+                type="number"
+                value={durationMinutes}
+                onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                min="1"
+                style={{ width: '100px', padding: '10px', fontSize: '16px', borderRadius: '4px', border: '1px solid #ddd' }}
+              />
+              <span style={{ color: '#555' }}>minuten</span>
+            </div>
+          </div>
+
+          {/* 3. Nabijheidseis */}
+          <div style={{ marginBottom: '24px' }}>
+            <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>📡 Nabijheidseis</p>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: '10px' }}>
+              <input
+                type="checkbox"
+                checked={proximityEnabled}
+                onChange={(e) => setProximityEnabled(e.target.checked)}
+                style={{ width: '18px', height: '18px' }}
+              />
+              <span>Teams moeten fysiek bij het opdrachtpunt zijn om in te dienen</span>
+            </label>
+            {proximityEnabled && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '28px' }}>
+                <input
+                  type="number"
+                  value={proximityRadius}
+                  onChange={(e) => setProximityRadius(Number(e.target.value))}
+                  min="10"
+                  max="2000"
+                  style={{ width: '90px', padding: '8px', fontSize: '15px', borderRadius: '4px', border: '1px solid #ddd' }}
+                />
+                <span style={{ color: '#555' }}>meter radius</span>
+              </div>
+            )}
+          </div>
+
+          {/* 4. Punten */}
+          <div style={{ marginBottom: '28px' }}>
+            <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>🏆 Punten</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', color: '#555', marginBottom: '4px' }}>Capture-punten per gebied</label>
+                <input
+                  type="number"
+                  value={capturePoints}
+                  onChange={(e) => setCapturePoints(Number(e.target.value))}
+                  min="0"
+                  style={{ width: '100%', padding: '8px', fontSize: '15px', borderRadius: '4px', border: '1px solid #ddd' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', color: '#555', marginBottom: '4px' }}>Hold-punten per minuut</label>
+                <input
+                  type="number"
+                  value={holdPointsPerMin}
+                  onChange={(e) => setHoldPointsPerMin(Number(e.target.value))}
+                  min="0"
+                  step="0.1"
+                  style={{ width: '100%', padding: '8px', fontSize: '15px', borderRadius: '4px', border: '1px solid #ddd' }}
+                />
+              </div>
+            </div>
           </div>
 
           <button
             onClick={handleCreateSession}
             disabled={!selectedCityId || createSessionMutation.isPending}
             className="btn-primary"
+            style={{ width: '100%', padding: '14px', fontSize: '16px' }}
           >
-            {createSessionMutation.isPending ? 'Aanmaken...' : 'Maak Spel Aan'}
+            {createSessionMutation.isPending ? 'Aanmaken...' : 'Spel aanmaken'}
           </button>
         </div>
       )}
@@ -520,33 +592,45 @@ const Admin: React.FC = () => {
               </div>
             )}
 
-            <div style={{ background: 'white', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
-              <p style={{ marginBottom: '10px', fontWeight: 'bold' }}>Deel-link:</p>
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
-                <input
-                  type="text"
-                  value={`${window.location.origin}/join/${currentSession.join_code}`}
-                  readOnly
-                  style={{
-                    flex: 1,
-                    padding: '10px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                  }}
-                />
-                <button onClick={copyJoinLink} className="btn-primary">
-                  Kopieer
-                </button>
+            <div style={{
+              background: '#1a237e',
+              borderRadius: '12px',
+              padding: '24px 20px',
+              marginBottom: '15px',
+              textAlign: 'center',
+            }}>
+              <p style={{ color: 'rgba(255,255,255,0.75)', margin: '0 0 8px', fontSize: '13px', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                Spelcode
+              </p>
+              <div style={{
+                fontSize: '3.5rem',
+                fontWeight: '900',
+                color: '#fff',
+                letterSpacing: '0.2em',
+                lineHeight: 1.1,
+                marginBottom: '12px',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                {currentSession.join_code}
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(`${window.location.origin}/join/${currentSession.join_code}`)}&size=180x180&margin=6`}
-                  alt="QR code join link"
-                  style={{ borderRadius: '8px', border: '1px solid #eee' }}
-                />
-                <p style={{ fontSize: '12px', color: '#888', margin: '6px 0 0' }}>Scan om mee te doen</p>
-              </div>
+              <p style={{ color: 'rgba(255,255,255,0.65)', margin: '0 0 16px', fontSize: '13px' }}>
+                Ga naar <strong style={{ color: '#fff' }}>{window.location.host}/join</strong> en voer deze code in
+              </p>
+              <button
+                onClick={copyJoinLink}
+                style={{
+                  background: 'rgba(255,255,255,0.15)',
+                  border: '1px solid rgba(255,255,255,0.35)',
+                  color: '#fff',
+                  borderRadius: '8px',
+                  padding: '8px 20px',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                🔗 Kopieer uitnodigingslink
+              </button>
             </div>
 
             <div style={{ background: 'white', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>

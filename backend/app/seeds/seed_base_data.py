@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, Point
 from geoalchemy2.shape import from_shape
 
 from app.db.session import SessionLocal
@@ -659,6 +659,295 @@ CITY_DATA = [
             },
         ],
     },
+    {
+        "name": "Brussel",
+        "description": "De Belgische hoofdstad met 15 historische gebieden in het stadscentrum",
+        "default_capture_points": 60.0,
+        "default_hold_points_per_minute": 1.0,
+        "proximity_enabled": True,
+        "proximity_radius": 150,
+        "areas": [
+            {
+                "name": "Dansaert",
+                "description": "Het modekwartier van Brussel vol hippe winkels, galeries en designerszaken",
+                "polygon": [
+                    (4.343075, 50.855023), (4.346723, 50.858628), (4.35256, 50.856785),
+                    (4.351573, 50.85413), (4.351058, 50.853127), (4.350028, 50.853345),
+                    (4.348483, 50.853534), (4.346295, 50.853616), (4.345222, 50.852504),
+                    (4.343891, 50.852016), (4.342775, 50.852531), (4.341402, 50.853019),
+                    (4.343075, 50.855023),
+                ],
+                "challenge_point": (4.347, 50.855),
+                "challenge": {
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Ateliervenster",
+                    "description": "🎨 De Dansaertstraat is het modehart van Brussel, vol hippe designerszaken, galeries en conceptstores. Loop door de straat en zoek de meest creatieve of opvallende etalage. Maak een foto met jullie beste pose ervoor en leg in een video van max 30 seconden uit waarom dit jullie winnaar is. Score = originaliteit van de etalage én jullie presentatie.",
+                    "score_description": "Hoe creatief is de etalage én de presentatie? (1 = saai, 5 = briljant)",
+                },
+            },
+            {
+                "name": "Koningsstraat",
+                "description": "Historisch centrum rond de Place des Martyrs en de Galeries Royales",
+                "polygon": [
+                    (4.352989, 50.856703), (4.354964, 50.856134), (4.355994, 50.858113),
+                    (4.359083, 50.857082), (4.360328, 50.856812), (4.361572, 50.857408),
+                    (4.363718, 50.85692), (4.364276, 50.856297), (4.366507, 50.855674),
+                    (4.365992, 50.854617), (4.36492, 50.852532), (4.362558, 50.853074),
+                    (4.362258, 50.852667), (4.360027, 50.853155), (4.359297, 50.85226),
+                    (4.357323, 50.852531), (4.356551, 50.852016), (4.354148, 50.852748),
+                    (4.353161, 50.852125), (4.351273, 50.852748), (4.352045, 50.85451),
+                    (4.352989, 50.856703),
+                ],
+                "challenge_point": (4.359, 50.855),
+                "challenge": {
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Wafels bij Place des Martyrs",
+                    "description": "🧇 De Place des Martyrs is een van de mooiste en minst bekende pleinen van Brussel — een stille neoclassicistische juweel midden in de drukte. Koop Belgische wafels bij een bakker of kraam in de buurt en eet ze op op het plein. Film jullie smaaktest in maximaal 30 seconden. Score = het totale aantal wafels dat jullie samen hebben opgegeten.",
+                    "score_description": "Hoeveel wafels hebben jullie samen opgegeten?",
+                },
+            },
+            {
+                "name": "Congreskolom",
+                "description": "Hoog gelegen wijk met de Colonne du Congrès en uitzicht over de stad",
+                "polygon": [
+                    (4.368395, 50.858411), (4.370026, 50.858085), (4.369812, 50.857706),
+                    (4.373674, 50.856676), (4.375606, 50.857137), (4.377751, 50.855864),
+                    (4.377794, 50.853912), (4.377408, 50.853696), (4.377408, 50.85291),
+                    (4.374962, 50.852937), (4.375863, 50.851962), (4.37376, 50.851447),
+                    (4.373031, 50.852315), (4.37007, 50.851529), (4.369812, 50.851203),
+                    (4.368783, 50.851393), (4.368439, 50.85264), (4.365735, 50.853372),
+                    (4.368395, 50.858411),
+                ],
+                "challenge_point": (4.372, 50.855),
+                "challenge": {
+                    "mode": ChallengeMode.LAST_APPROVED_WINS,
+                    "title": "Teamfoto bij de Congreskolom",
+                    "description": "🏛️ De Congreskolom (Colonne du Congrès) staat symbool voor de Belgische onafhankelijkheid en herdenkt de grondwet van 1831. Aan de voet brandt het Eeuwige Vuur ter nagedachtenis aan de gesneuvelden van de twee wereldoorlogen. Maak een teamfoto bij de voet van de kolom met het Eeuwige Vuur zichtbaar in beeld.",
+                },
+            },
+            {
+                "name": "Vismarkt / Sint-Goriks",
+                "description": "De plek waar Brussel ontstond, met de historische Sint-Gorikshallen",
+                "polygon": [
+                    (4.33754, 50.848603), (4.33784, 50.84947), (4.339085, 50.850635),
+                    (4.341144, 50.852803), (4.342475, 50.852342), (4.343891, 50.851691),
+                    (4.345479, 50.852287), (4.346551, 50.853372), (4.34844, 50.853345),
+                    (4.349685, 50.853182), (4.350886, 50.852884), (4.349985, 50.851014),
+                    (4.348741, 50.849848), (4.348998, 50.849552), (4.349856, 50.849145),
+                    (4.349127, 50.84844), (4.347453, 50.848494), (4.345908, 50.848088),
+                    (4.343505, 50.848305), (4.342775, 50.848007), (4.338098, 50.84722),
+                    (4.33754, 50.848603),
+                ],
+                "challenge_point": (4.344, 50.850),
+                "challenge": {
+                    "mode": ChallengeMode.LAST_APPROVED_WINS,
+                    "title": "Foto bij de Sint-Gorikshallen",
+                    "description": "🏗️ De Sint-Gorikshallen (Halles Saint-Géry) is een prachtig gerestaureerde overdekte markthal uit 1881, gebouwd op de plek waar de stad Brussel is ontstaan — het eiland dat Broeksele heette. Maak een groepsfoto voor of in de hal met de historische ijzeren constructie duidelijk in beeld.",
+                },
+            },
+            {
+                "name": "Beurs / Sint-Niklaas",
+                "description": "Omgeving van de Bourse de Bruxelles en de Sint-Niklaaskerk",
+                "polygon": [
+                    (4.350414, 50.850851), (4.351101, 50.852477), (4.353333, 50.851854),
+                    (4.354277, 50.852477), (4.355393, 50.852098), (4.355822, 50.851935),
+                    (4.356165, 50.851827), (4.355307, 50.850933), (4.35698, 50.850336),
+                    (4.356337, 50.849794), (4.356122, 50.848874), (4.352903, 50.849795),
+                    (4.351659, 50.84863), (4.349298, 50.849823), (4.350414, 50.850851),
+                ],
+                "challenge_point": (4.353, 50.851),
+                "challenge": {
+                    "mode": ChallengeMode.LAST_APPROVED_WINS,
+                    "title": "Teamfoto bij de Beurs",
+                    "description": "💰 De Beurs van Brussel (Bourse de Bruxelles) is een indrukwekkend neoclassicistisch gebouw uit 1873, nu omgebouwd tot biermuseum. Maak een creatieve teamfoto op de trappen of voor de grote pilaren van de Beurs. Zorg dat de façade van het gebouw goed in beeld is.",
+                },
+            },
+            {
+                "name": "Muntplein",
+                "description": "Het levendige Muntplein met de nationale opera van België",
+                "polygon": [
+                    (4.35668, 50.848928), (4.356809, 50.84966), (4.357581, 50.850418),
+                    (4.355951, 50.85096), (4.357195, 50.852233), (4.358311, 50.852179),
+                    (4.359469, 50.851935), (4.360156, 50.85283), (4.362473, 50.852315),
+                    (4.362816, 50.852775), (4.364791, 50.852342), (4.363933, 50.850662),
+                    (4.363074, 50.848927), (4.362388, 50.849172), (4.360457, 50.848603),
+                    (4.358998, 50.848332), (4.357967, 50.848603), (4.35668, 50.848928),
+                ],
+                "challenge_point": (4.360, 50.851),
+                "challenge": {
+                    "mode": ChallengeMode.LAST_APPROVED_WINS,
+                    "title": "Theatrale pose bij de Munt",
+                    "description": "🎭 De Muntschouwburg (Théâtre Royal de la Monnaie) is de nationale opera van België. In 1830 brak hier de Belgische revolutie uit na een operavoorstelling. Maak een zo theatraal en dramatisch mogelijke teamfoto voor de indrukwekkende pilaren van de Munt op het Muntplein — volledige operatieke overdrijving gewenst!",
+                },
+            },
+            {
+                "name": "Park van Brussel",
+                "description": "Het Warandepark, het enige koninklijke park dat het publiek vrij mag betreden",
+                "polygon": [
+                    (4.365, 50.852), (4.365649, 50.853101), (4.368052, 50.852423),
+                    (4.368439, 50.851176), (4.370155, 50.850878), (4.370413, 50.851258),
+                    (4.372901, 50.851963), (4.373502, 50.851122), (4.376035, 50.851881),
+                    (4.37788, 50.849768), (4.377794, 50.847735), (4.377923, 50.845784),
+                    (4.377665, 50.844835), (4.369383, 50.846678), (4.369812, 50.847383),
+                    (4.369683, 50.848061), (4.369211, 50.848495), (4.36535, 50.847573),
+                    (4.363, 50.848), (4.365, 50.852),
+                ],
+                "challenge_point": (4.371, 50.849),
+                "challenge": {
+                    "mode": ChallengeMode.LAST_APPROVED_WINS,
+                    "title": "Menselijke piramide in het Warandepark",
+                    "description": "🌳 Het Warandepark (Parc de Bruxelles) is het grootste stadspark van Brussel en het enige koninklijke park dat het publiek vrij mag betreden — het Koninklijk Paleis staat er pal naast. Bouw samen een menselijke piramide in het park. Film jullie beste poging in maximaal 30 seconden. Hoe hoger, stabieler en langer de piramide, hoe beter!",
+                },
+            },
+            {
+                "name": "Anneessens",
+                "description": "Oude volksbuurt met de middeleeuwse Tour Noire en diverse gemeenschappen",
+                "polygon": [
+                    (4.339106, 50.844999), (4.338355, 50.847112), (4.341853, 50.8476),
+                    (4.343397, 50.847844), (4.343634, 50.848034), (4.345822, 50.847884),
+                    (4.346788, 50.848006), (4.34771, 50.848223), (4.349191, 50.848142),
+                    (4.344235, 50.84363), (4.343398, 50.84397), (4.339857, 50.842953),
+                    (4.339106, 50.844999),
+                ],
+                "challenge_point": (4.344, 50.846),
+                "challenge": {
+                    "mode": ChallengeMode.LAST_APPROVED_WINS,
+                    "title": "Selfie bij de Tour Noire",
+                    "description": "🏰 De Tour Noire (Zwarte Toren) is een van de weinige overblijfselen van de eerste middeleeuwse stadsmuur van Brussel, gebouwd in de 12e eeuw. Je vindt hem ingebouwd in een modern hotel — een opmerkelijk contrast van oud en nieuw. Maak een creatieve teamfoto met de middeleeuwse toren als achtergrond.",
+                },
+            },
+            {
+                "name": "Grote Markt",
+                "description": "De Grote Markt, door Victor Hugo omschreven als de mooiste markt ter wereld",
+                "polygon": [
+                    (4.349363, 50.848101), (4.350286, 50.849064), (4.351723, 50.848291),
+                    (4.353011, 50.849484), (4.35432, 50.848995), (4.355821, 50.848644),
+                    (4.357109, 50.847654), (4.357967, 50.847031), (4.35844, 50.846272),
+                    (4.355693, 50.844077), (4.353697, 50.84321), (4.35168, 50.842464),
+                    (4.347368, 50.844755), (4.346745, 50.84489), (4.346101, 50.84519),
+                    (4.349363, 50.848101),
+                ],
+                "challenge_point": (4.352, 50.846),
+                "challenge": {
+                    "mode": ChallengeMode.LAST_APPROVED_WINS,
+                    "title": "Gildenhuis selfie op de Grote Markt",
+                    "description": "⭐ De Grote Markt van Brussel werd door Victor Hugo omschreven als 'de mooiste markt ter wereld'. Ze wordt omringd door de gotische gevel van het Stadhuis en schitterende gildhuizen. Maak een teamfoto voor de gevel van het Stadhuis of een van de gildhuizen. Zorg dat de architectuur duidelijk zichtbaar is op de achtergrond.",
+                },
+            },
+            {
+                "name": "Nieuwstraat / Shopping",
+                "description": "De Nieuwstraat, de drukste winkelstraat van België",
+                "polygon": [
+                    (4.357109, 50.844863), (4.359083, 50.8463), (4.357495, 50.847763),
+                    (4.358054, 50.848345), (4.358826, 50.848047), (4.360671, 50.848359),
+                    (4.362194, 50.848833), (4.362516, 50.848359), (4.362495, 50.847735),
+                    (4.362817, 50.847654), (4.360628, 50.843305), (4.359212, 50.843685),
+                    (4.357109, 50.844863),
+                ],
+                "challenge_point": (4.360, 50.846),
+                "challenge": {
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Belgische souvenirjacht",
+                    "description": "🎁 De Nieuwstraat (Rue Neuve) is de drukste winkelstraat van België. Loop door de straat en zoek het meest originele of grappige typisch Belgische souvenir dat je kunt vinden — geen chocolade of wafels! Maak een foto met jullie vondst in beeld. Score = originaliteit en Belgischheid van het souvenir.",
+                    "score_description": "Hoe origineel en Belgisch is het gevonden souvenir? (1 = saai, 5 = perfect Belgisch)",
+                },
+            },
+            {
+                "name": "Kunstberg / Mont des Arts",
+                "description": "De Kunstberg met een van de mooiste panoramauitzichten over Brussel",
+                "polygon": [
+                    (4.363246, 50.847735), (4.36535, 50.847383), (4.369255, 50.84825),
+                    (4.369426, 50.847356), (4.369041, 50.846545), (4.37762, 50.844619),
+                    (4.378394, 50.843535), (4.378179, 50.842695), (4.375391, 50.843237),
+                    (4.375047, 50.842315), (4.374704, 50.841394), (4.371099, 50.842017),
+                    (4.367065, 50.842831), (4.365263, 50.843183), (4.364748, 50.842153),
+                    (4.360757, 50.843102), (4.363246, 50.847735),
+                ],
+                "challenge_point": (4.370, 50.844),
+                "challenge": {
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Panorama van de Kunstberg",
+                    "description": "🏙️ Vanop de Kunstberg (Mont des Arts) heb je een van de mooiste uitzichten over Brussel, met zicht op de Grote Markt, het Atomium en tientallen kerktorens. Maak een panoramafoto of een video van maximaal 30 seconden vanop het uitkijkpunt. Tel hoeveel kerktorens, koepels of opvallende gebouwen jullie kunnen identificeren. Score = aantal herkende landmarks.",
+                    "score_description": "Hoeveel kerktorens, koepels of bekende gebouwen zijn er zichtbaar in jullie panorama?",
+                },
+            },
+            {
+                "name": "Marolles / Vossenplein",
+                "description": "De Marollen met het Vossenplein en de dagelijkse vlooienmarkt",
+                "polygon": [
+                    (4.339921, 50.842831), (4.343377, 50.84382), (4.345609, 50.84286),
+                    (4.347023, 50.842195), (4.346508, 50.841585), (4.346766, 50.840487),
+                    (4.346015, 50.839009), (4.345071, 50.837993), (4.344342, 50.837803),
+                    (4.341896, 50.837436), (4.341295, 50.838806), (4.34093, 50.839158),
+                    (4.340973, 50.839742), (4.339921, 50.842831),
+                ],
+                "challenge_point": (4.343, 50.840),
+                "challenge": {
+                    "mode": ChallengeMode.LAST_APPROVED_WINS,
+                    "title": "Rommelmarktschat op het Vossenplein",
+                    "description": "🦊 Het Vossenplein (Place du Jeu de Balle) in de Marollen is de plek voor de dagelijkse vlooienmarkt van Brussel — elke dag van 6 tot 14 uur. Zoek het meest bizarre, hilarische of interessante voorwerp op de markt en maak een foto met jullie vondst. Als er geen markt is, maak dan een creatieve teamfoto op het plein zelf.",
+                },
+            },
+            {
+                "name": "Sablon / Zavel",
+                "description": "Het luxueuze Sablonkwartier met chocolatiers, antiekwinkels en de Zavelkerk",
+                "polygon": [
+                    (4.344471, 50.843522), (4.346145, 50.845027), (4.351616, 50.84218),
+                    (4.355565, 50.843563), (4.356852, 50.844594), (4.358568, 50.843617),
+                    (4.360328, 50.84294), (4.364619, 50.841992), (4.364577, 50.840717),
+                    (4.36522, 50.840284), (4.36389, 50.839471), (4.361143, 50.838224),
+                    (4.35874, 50.840203), (4.357023, 50.839146), (4.353462, 50.836922),
+                    (4.350029, 50.838468), (4.348269, 50.83676), (4.345522, 50.837871),
+                    (4.346166, 50.83863), (4.347153, 50.840419), (4.346938, 50.841503),
+                    (4.347582, 50.842262), (4.344471, 50.843522),
+                ],
+                "challenge_point": (4.355, 50.841),
+                "challenge": {
+                    "mode": ChallengeMode.LAST_APPROVED_WINS,
+                    "title": "Pralines op het Sablon",
+                    "description": "🍫 Het Sablon (Zavel) is het chocoladekwartier van Brussel, omgeven door antiekwinkels en de schitterende gotische Onze-Lieve-Vrouwkerk. Koop pralines bij een chocolatier op het Sablon en maak een video van maximaal 30 seconden van jullie degustatie. Film jullie eerlijke en overdreven reacties!",
+                },
+            },
+            {
+                "name": "Coudenberg / Koningsplein",
+                "description": "Het koninklijke Place Royale met het ruiterstandbeeld en het Coudenberg-paleis",
+                "polygon": [
+                    (4.36595, 50.840257), (4.364876, 50.840852), (4.36492, 50.841882),
+                    (4.365479, 50.842939), (4.374576, 50.841098), (4.372644, 50.837654),
+                    (4.370583, 50.836516), (4.36595, 50.840257),
+                ],
+                "challenge_point": (4.370, 50.840),
+                "challenge": {
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Koninklijk perspectief",
+                    "description": "👑 Op de Place Royale staat het ruiterstandbeeld van Godefroid de Bouillon, leider van de Eerste Kruistocht. Vlak onder het plein liggen de opgravingen van het middeleeuws Coudenberg-paleis. Maak een creatieve foto vanuit een verrassende hoek met het standbeeld én een opvallend Brussels gebouw als achtergrond. Score = creativiteit van het perspectief.",
+                    "score_description": "Hoe creatief en verrassend is de camerahoek of compositie? (1 = standaard, 5 = heel creatief)",
+                },
+            },
+            {
+                "name": "Paleis van Justitie",
+                "description": "Het imposante Paleis van Justitie, een van de grootste 19e-eeuwse gebouwen ter wereld",
+                "polygon": [
+                    (4.343719, 50.833535), (4.342904, 50.833969), (4.342303, 50.834971),
+                    (4.341746, 50.837166), (4.34518, 50.837709), (4.348356, 50.83638),
+                    (4.350158, 50.838035), (4.353548, 50.836597), (4.358612, 50.839743),
+                    (4.361229, 50.837844), (4.365606, 50.840122), (4.367108, 50.838874),
+                    (4.370713, 50.835811), (4.37037, 50.83508), (4.36904, 50.834321),
+                    (4.370713, 50.833508), (4.368652, 50.832667), (4.365862, 50.833698),
+                    (4.36389, 50.832451), (4.361916, 50.830796), (4.359384, 50.832044),
+                    (4.357753, 50.831203), (4.349686, 50.832477), (4.348311, 50.832695),
+                    (4.347281, 50.833129), (4.343719, 50.833535),
+                ],
+                "challenge_point": (4.356, 50.835),
+                "challenge": {
+                    "mode": ChallengeMode.HIGHEST_SCORE_WINS,
+                    "title": "Kolossen tellen",
+                    "description": "⚖️ Het Paleis van Justitie (Palais de Justice) is een van de grootste gebouwen uit de 19e eeuw ter wereld — bij de bouw werden complete wijken afgebroken. De gigantische gevel met zijn imposante zuilen is een monument op zich. Tel het aantal grote pilaren (zuilen) op de hoofdgevel. Maak een foto of korte video (max 30 sec) als bewijs. Score = aantal getelde zuilen.",
+                    "score_description": "Hoeveel grote pilaren (zuilen) hebben jullie geteld op de hoofdgevel van het Paleis van Justitie?",
+                },
+            },
+        ],
+    },
 ]
 
 
@@ -724,6 +1013,8 @@ def upsert_city(db, city_data: dict):
             description=city_data["description"],
             default_capture_points=city_data.get("default_capture_points", 60.0),
             default_hold_points_per_minute=city_data.get("default_hold_points_per_minute", 0.6),
+            proximity_enabled=city_data.get("proximity_enabled", False),
+            proximity_radius=city_data.get("proximity_radius", 150),
         )
         db.add(city)
         db.commit()
@@ -733,6 +1024,8 @@ def upsert_city(db, city_data: dict):
         city.description = city_data["description"]
         city.default_capture_points = city_data.get("default_capture_points", 60.0)
         city.default_hold_points_per_minute = city_data.get("default_hold_points_per_minute", 0.6)
+        city.proximity_enabled = city_data.get("proximity_enabled", False)
+        city.proximity_radius = city_data.get("proximity_radius", 150)
         db.commit()
         logger.info(f"Updated city: {city.name}")
 
@@ -746,6 +1039,9 @@ def upsert_city(db, city_data: dict):
             .first()
         )
 
+        cp = area_data.get("challenge_point")
+        challenge_point_geom = from_shape(Point(cp[0], cp[1]), srid=4326) if cp else None
+
         if not area:
             area = Area(
                 name=area_data["name"],
@@ -755,6 +1051,7 @@ def upsert_city(db, city_data: dict):
                 hold_points_per_minute=area_data.get("hold_points_per_minute"),
                 geom=from_shape(polygon, srid=4326),
                 center_point=from_shape(polygon.centroid, srid=4326),
+                challenge_point=challenge_point_geom,
             )
             db.add(area)
             db.commit()
@@ -766,6 +1063,7 @@ def upsert_city(db, city_data: dict):
             area.hold_points_per_minute = area_data.get("hold_points_per_minute")
             area.geom = from_shape(polygon, srid=4326)
             area.center_point = from_shape(polygon.centroid, srid=4326)
+            area.challenge_point = challenge_point_geom
             db.commit()
             logger.info(f"Updated area geometry: {city.name} - {area.name}")
 
@@ -851,7 +1149,7 @@ def seed_cities():
 
         logger.info("=" * 50)
         logger.info("Seed completed")
-        logger.info("Cities available: Amsterdam, Roosendaal, Lissabon")
+        logger.info("Cities available: Amsterdam, Roosendaal, Lissabon, Brussel")
         logger.info("=" * 50)
     except Exception as exc:
         logger.error(f"Seed failed: {exc}")

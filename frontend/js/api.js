@@ -101,13 +101,18 @@ class ApiClient {
     }
 
     // Submissions endpoints
-    async createSubmission(areaId, text, score, photos, videos) {
+    async createSubmission(areaId, text, score, photos, videos, latitude = null, longitude = null) {
         const formData = new FormData();
         formData.append('area_id', areaId);
         formData.append('text', text);
-        
+
         if (score !== null && score !== undefined && score !== '') {
             formData.append('score', score);
+        }
+
+        if (latitude !== null && longitude !== null) {
+            formData.append('latitude', latitude);
+            formData.append('longitude', longitude);
         }
 
         // Add photos

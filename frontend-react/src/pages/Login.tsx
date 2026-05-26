@@ -12,30 +12,26 @@ const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Check if user was redirected due to expired session
     if (searchParams.get('expired') === 'true') {
       setError('Je sessie is verlopen. Log opnieuw in om door te gaan.');
     }
   }, [searchParams]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: { preventDefault(): void }) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
       const team = await login(name, password);
-      
+
       if (team.is_admin) {
-        // Admin always goes to admin panel
         window.location.href = '/admin';
       } else {
-        // Regular team: check if game is active
         const gameStatus = await apiClient.getGameStatus();
         if (gameStatus.is_active) {
           window.location.href = '/';
         } else {
-          // Game not started yet, go to waiting page
           window.location.href = '/waiting';
         }
       }
@@ -51,7 +47,7 @@ const Login: React.FC = () => {
       <div className="auth-card">
         <h1>🏙️ Stadsspel</h1>
         <h2>Inloggen</h2>
-        
+
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="name">Teamnaam</label>
@@ -87,7 +83,10 @@ const Login: React.FC = () => {
         </form>
 
         <p className="auth-link">
-          Nog geen account? <Link to="/register">Registreer hier</Link>
+          Neem deel aan een spel? <Link to="/join">Voer een spelcode in</Link>
+        </p>
+        <p className="auth-link">
+          <Link to="/uitleg">Hoe werkt het?</Link>
         </p>
       </div>
     </div>

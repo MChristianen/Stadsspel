@@ -59,6 +59,8 @@ class City(Base):
     description = Column(Text, nullable=True)
     default_capture_points = Column(Float, nullable=False, default=60.0)
     default_hold_points_per_minute = Column(Float, nullable=False, default=0.6)
+    proximity_enabled = Column(Boolean, nullable=False, default=False)
+    proximity_radius = Column(Integer, nullable=False, default=150)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     # Relationships
@@ -80,6 +82,7 @@ class Area(Base):
     # PostGIS geometry columns
     geom = Column(Geometry("POLYGON", srid=4326), nullable=False)
     center_point = Column(Geometry("POINT", srid=4326), nullable=False)
+    challenge_point = Column(Geometry("POINT", srid=4326), nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
