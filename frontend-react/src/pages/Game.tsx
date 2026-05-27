@@ -20,6 +20,24 @@ const createColorMarker = (color: string, label: string) =>
     iconAnchor: [9, 9],
   });
 
+const createPinMarker = (label: string) =>
+  L.divIcon({
+    className: '',
+    html: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="28" viewBox="0 0 20 28"><title>${label}</title><path d="M10 0C4.5 0 0 4.5 0 10c0 7.5 10 18 10 18S20 17.5 20 10C20 4.5 15.5 0 10 0z" fill="#e53935" stroke="white" stroke-width="1.5"/><circle cx="10" cy="10" r="3.5" fill="white"/></svg>`,
+    iconSize: [20, 28],
+    iconAnchor: [10, 28],
+  });
+
+const haversineDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371000;
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
 const Game: React.FC = () => {
   const { team } = useAuth();
   const navigate = useNavigate();
@@ -328,6 +346,18 @@ const Game: React.FC = () => {
     });
   };
 
+  const getProximityState = (areaId: number): 'near' | 'far' | 'unknown' | 'disabled' => {
+    const feature = areasData?.features.find((f) => f.properties.id === areaId);
+    if (!feature) return 'disabled';
+    if (!feature.properties.proximity_enabled) return 'disabled';
+    if (team?.is_admin) return 'near';
+    if (!ownPosition) return 'unknown';
+    const cp = feature.properties.challenge_point;
+    if (!cp) return 'disabled';
+    const dist = haversineDistance(ownPosition.lat, ownPosition.lng, cp.coordinates[1], cp.coordinates[0]);
+    return dist <= feature.properties.proximity_radius ? 'near' : 'far';
+  };
+
   const isCooldownActive = (areaId: number) => {
     const cooldown = cooldowns.find((cd) => cd.area_id === areaId);
     return cooldown ? !cooldown.can_submit : false;
@@ -589,6 +619,32 @@ const Game: React.FC = () => {
           </Marker>
         ))}
 
+        {/* Opdrachtpunt markers — always visible for all players */}
+        {areasData?.features.map((feature) => {
+          const cp = feature.properties.challenge_point;
+          if (!cp) return null;
+          const [lng, lat] = cp.coordinates;
+          return (
+            <Marker
+              key={`pin-${feature.properties.id}`}
+              position={[lat, lng]}
+              icon={createPinMarker(feature.properties.name)}
+            >
+              <Popup>
+                <div style={{ minWidth: '160px' }}>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>{feature.properties.name}</h4>
+                  <button
+                    onClick={() => document.dispatchEvent(new CustomEvent('selectArea', { detail: feature.properties.id }))}
+                    style={{ padding: '6px 12px', background: '#667eea', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', width: '100%', fontSize: '13px' }}
+                  >
+                    Selecteer gebied
+                  </button>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+
         {areasData && (
           <GeoJSON
             key={areasRenderKey}
@@ -602,22 +658,14 @@ const Game: React.FC = () => {
             onEachFeature={(feature, layer) => {
               const cooldownTime = getCooldownTime(feature.properties.id);
               const modeEmoji = feature.properties.challenge?.mode === 'LAST_APPROVED_WINS' ? '🏆' : '📊';
-              const rawDesc = feature.properties.challenge?.description || '';
-              const popupDesc = rawDesc.replace(/\s*\(?https:\/\/maps\.google\.com\/[^\s)]+\)?/g, '');
               const popupContent = `
-                <div style="min-width: 200px;">
+                <div style="min-width: 180px;">
                   <h4 style="margin: 0 0 8px 0;">${feature.properties.name}</h4>
-                  <p style="margin: 4px 0;"><strong>Opdracht:</strong><br/>${feature.properties.challenge?.title || 'Geen opdracht'}</p>
-                  <p style="margin: 4px 0; font-size: 0.9em;">${popupDesc}</p>
-                  <p style="margin: 4px 0; font-size: 0.85em; color: #667eea;">📍 Tik op "Selecteer gebied" voor de locatie.</p>
-                  <p style="margin: 4px 0;"><strong>Mode:</strong> ${modeEmoji} ${feature.properties.challenge?.mode === 'LAST_APPROVED_WINS' ? 'Laatst goedgekeurd wint' : 'Hoogste score wint'}</p>
+                  <p style="margin: 4px 0;">${modeEmoji} ${feature.properties.challenge?.mode === 'LAST_APPROVED_WINS' ? 'Laatst goedgekeurd wint' : 'Hoogste score wint'}</p>
                   ${feature.properties.ownership?.owner_team_name
                     ? `<p style="margin: 4px 0;"><strong>Eigenaar:</strong> <span style="color: ${feature.properties.ownership.owner_team_color}; font-weight: bold;">${feature.properties.ownership.owner_team_name}</span></p>
-                       <p style="margin: 4px 0;"><strong>In bezit sinds:</strong> ${formatOwnedTime(feature.properties.ownership.owned_seconds)}</p>`
+                       <p style="margin: 4px 0; font-size: 0.85em; color: #666;">In bezit: ${formatOwnedTime(feature.properties.ownership.owned_seconds)}</p>`
                     : '<p style="margin: 4px 0; color: #999;">Nog geen eigenaar</p>'}
-                  ${feature.properties.ownership?.current_high_score !== null
-                    ? `<p style="margin: 4px 0;"><strong>Top score:</strong> ${feature.properties.ownership.current_high_score} punten</p>`
-                    : ''}
                   ${cooldownTime ? `<p style="margin: 4px 0; color: red;"><strong>⏱️ Cooldown:</strong> ${cooldownTime}</p>` : ''}
                   <button onclick="document.dispatchEvent(new CustomEvent('selectArea', {detail: ${feature.properties.id}}))"
                     style="margin-top: 8px; padding: 6px 12px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">
@@ -670,7 +718,25 @@ const Game: React.FC = () => {
                   </div>
                 )}
 
-                {area?.challenge?.description && (() => {
+                {(() => {
+                  const proxState = getProximityState(selectedAreaId!);
+                  if (proxState === 'far') {
+                    return (
+                      <div style={{ background: '#fff3e0', border: '1px solid #ffe0b2', borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '14px 20px', marginBottom: '16px', textAlign: 'center', color: '#e65100' }}>
+                        <div style={{ fontSize: '24px', marginBottom: '6px' }}>📍</div>
+                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Kom dichterbij</div>
+                        <div style={{ fontSize: '0.88em' }}>Je moet binnen {area?.proximity_radius}m van het opdrachtpunt staan om de opdracht te zien en in te dienen.</div>
+                      </div>
+                    );
+                  }
+                  if (proxState === 'unknown') {
+                    return (
+                      <div style={{ background: '#f5f5f5', border: '1px solid #e0e0e0', borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '14px 20px', marginBottom: '16px', textAlign: 'center', color: '#888' }}>
+                        <div style={{ fontSize: '13px' }}>GPS ophalen… wacht even.</div>
+                      </div>
+                    );
+                  }
+                  if (!area?.challenge?.description) return null;
                   const desc = area.challenge.description;
                   const urlMatch = desc.match(/https:\/\/maps\.google\.com\/[^\s)]+/);
                   const mapsUrl = urlMatch ? urlMatch[0] : null;
@@ -720,7 +786,7 @@ const Game: React.FC = () => {
               <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '6px' }}>Jij bent de tikker!</div>
               <div style={{ fontSize: '14px', opacity: 0.9 }}>Als tikker kun je geen opdrachten indienen.</div>
             </div>
-          ) : (
+          ) : getProximityState(selectedAreaId!) === 'far' || getProximityState(selectedAreaId!) === 'unknown' ? null : (
           <form onSubmit={handleSubmit}>
             <div style={{ background: '#fff3cd', padding: '12px', borderRadius: '8px', marginBottom: '15px', border: '2px solid #ffc107' }}>
               <p style={{ margin: 0, fontSize: '14px', color: '#856404' }}>

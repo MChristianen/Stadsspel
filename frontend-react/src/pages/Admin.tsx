@@ -603,13 +603,14 @@ const Admin: React.FC = () => {
                 Spelcode
               </p>
               <div style={{
-                fontSize: '3.5rem',
+                fontSize: 'clamp(1.8rem, 10vw, 3.5rem)',
                 fontWeight: '900',
                 color: '#fff',
-                letterSpacing: '0.2em',
+                letterSpacing: '0.15em',
                 lineHeight: 1.1,
                 marginBottom: '12px',
                 fontVariantNumeric: 'tabular-nums',
+                wordBreak: 'break-all',
               }}>
                 {currentSession.join_code}
               </div>

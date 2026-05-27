@@ -65,6 +65,9 @@ export interface Area {
   top_score: number | null;
   top_score_team_id: number | null;
   top_score_team_name: string | null;
+  challenge_point: { type: 'Point'; coordinates: [number, number] } | null;
+  proximity_enabled: boolean;
+  proximity_radius: number;
 }
 
 export interface AreasGeoJSON {
