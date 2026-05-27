@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
+import { Capacitor } from '@capacitor/core';
+import { BackgroundGeolocation } from '@capacitor-community/background-geolocation';
 import { apiClient } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
@@ -120,9 +122,38 @@ const Game: React.FC = () => {
     enabled: !!team?.game_session_id && !!gameStatus?.is_active,
   });
 
-  // GPS: watch own position
+  // GPS: watch own position — native app uses background plugin, browser uses watchPosition
   useEffect(() => {
     if (!gameStatus?.is_active) return;
+
+    if (Capacitor.isNativePlatform()) {
+      let watcherId: string | null = null;
+      BackgroundGeolocation.addWatcher(
+        {
+          backgroundMessage: 'Stadsspel volgt je locatie.',
+          backgroundTitle: 'Stadsspel is actief',
+          requestPermissions: true,
+          stale: false,
+          distanceFilter: 0,
+        },
+        (position, error) => {
+          if (error) {
+            if (error.code === 'NOT_AUTHORIZED') setGpsStatus('denied');
+            return;
+          }
+          if (position) {
+            const p = { lat: position.latitude, lng: position.longitude };
+            setOwnPosition(p);
+            ownPositionRef.current = p;
+            setGpsStatus('active');
+          }
+        },
+      ).then((id) => { watcherId = id; });
+      return () => {
+        if (watcherId) BackgroundGeolocation.removeWatcher({ id: watcherId });
+      };
+    }
+
     if (!navigator.geolocation) {
       setGpsStatus('unavailable');
       return;
