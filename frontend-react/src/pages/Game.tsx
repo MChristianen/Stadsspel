@@ -3,8 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, GeoJSON, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { Capacitor } from '@capacitor/core';
-import { BackgroundGeolocation } from '@capacitor-community/background-geolocation';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+import type { BackgroundGeolocationPlugin, Location as GpsLocation, CallbackError } from '@capacitor-community/background-geolocation';
+
+const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
 import { apiClient } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
@@ -136,7 +138,7 @@ const Game: React.FC = () => {
           stale: false,
           distanceFilter: 0,
         },
-        (position, error) => {
+        (position?: GpsLocation, error?: CallbackError) => {
           if (error) {
             if (error.code === 'NOT_AUTHORIZED') setGpsStatus('denied');
             return;
@@ -148,7 +150,7 @@ const Game: React.FC = () => {
             setGpsStatus('active');
           }
         },
-      ).then((id) => { watcherId = id; });
+      ).then((id: string) => { watcherId = id; });
       return () => {
         if (watcherId) BackgroundGeolocation.removeWatcher({ id: watcherId });
       };
