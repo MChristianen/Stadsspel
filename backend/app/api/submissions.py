@@ -34,7 +34,7 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 MAX_PHOTO_FILES = 5
 MAX_VIDEO_FILES = 2
 MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024
-MAX_VIDEO_SIZE_BYTES = 150 * 1024 * 1024  # 150MB: ruim voor 30-sec smartphone video op 1080p
+MAX_VIDEO_SIZE_BYTES = 250 * 1024 * 1024  # 250MB: ruim voor 60-sec smartphone video op 1080p
 ALLOWED_PHOTO_TYPES = {"image/jpeg", "image/png", "image/webp"}
 ALLOWED_VIDEO_TYPES = {"video/mp4", "video/webm", "video/quicktime"}
 
