@@ -722,7 +722,7 @@ CITY_DATA = [
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
                     "title": "Leeuwenpose bij de Congreskolom",
-                    "description": "De Congreskolom (Colonne du Congrès) staat symbool voor de Belgische onafhankelijkheid. Aan de voet brandt het Eeuwige Vuur ter nagedachtenis aan de gesneuvelden van de twee wereldoorlogen — bewaakt door vier slapende stenen leeuwen. https://maps.google.com/?q=Colonne+du+Congres+Brussels Imiteer de pose van een van deze leeuwen zo exact mogelijk. Blijf minstens 30 seconden in die pose terwijl de ander filmt.",
+                    "description": "De Congreskolom (Colonne du Congrès) staat symbool voor de Belgische onafhankelijkheid. Aan de voet brandt het Eeuwige Vuur ter nagedachtenis aan de gesneuvelden van de twee wereldoorlogen — bewaakt door vier slapende stenen leeuwen. https://maps.google.com/?q=Colonne+du+Congres+Brussels Imiteer de pose van een van deze leeuwen zo exact mogelijk. Blijf minstens 30 seconden in die pose terwijl de ander een foto maakt.",
                 },
             },
             {
@@ -813,7 +813,7 @@ CITY_DATA = [
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
                     "title": "Middeleeuws gevecht bij de Tour Noire",
-                    "description": "De Tour Noire (Zwarte Toren) is een van de weinige overblijfselen van de eerste middeleeuwse stadsmuur van Brussel, gebouwd in de 12e eeuw. Je vindt hem ingebouwd in het Novotel hotel aan de Rue de l'Évêque. https://maps.google.com/?q=Tour+Noire+Bruxelles Voer een overdreven middeleeuws gevecht op voor de toren: één ridder verdedigt de burcht, de ander valt aan. Geen echt contact — dit is pure theater! Laat een voorbijganger de foto maken.",
+                    "description": "De Tour Noire (Zwarte Toren) is een van de weinige overblijfselen van de eerste middeleeuwse stadsmuur van Brussel, gebouwd in de 12e eeuw. Je vindt hem ingebouwd in het Novotel hotel aan de Rue de l'Évêque. https://maps.google.com/?q=Tour+Noire+Bruxelles Voer een overdreven middeleeuws gevecht op voor de toren: één ridder verdedigt de burcht, de ander valt aan. Geen echt contact — dit is pure theater! Laat een voorbijganger dit filmen.",
                 },
             },
             {
