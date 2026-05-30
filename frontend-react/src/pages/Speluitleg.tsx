@@ -1,9 +1,18 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import uitlegVoorbeeld from '../assets/uitleg-voorbeeld.svg';
+import { useAuth } from '../contexts/AuthContext';
 
 const Speluitleg: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+
   return (
     <div className="uitleg-page">
+      {!isAuthenticated && (
+        <Link to="/" style={{ display: 'inline-block', marginBottom: '0.75rem', color: '#244A8F', textDecoration: 'none', fontWeight: 600 }}>
+          ← Terug
+        </Link>
+      )}
       <section className="uitleg-hero">
         <h1>Speluitleg</h1>
         <p>
@@ -53,20 +62,22 @@ const Speluitleg: React.FC = () => {
           </article>
 
           <article className="uitleg-card uitleg-step-card step-2">
-            <h3>Stap 2: Bewegen en kiezen</h3>
+            <h3>Stap 2: Navigeren naar een opdracht</h3>
             <ul>
-              <li>Kies een gebied op de kaart.</li>
-              <li>Lees de opdracht bij dat gebied.</li>
-              <li>Ga naar de locatie en voer de opdracht uit.</li>
+              <li>Op de kaart zie je voor elk gebied een rood puntje — dat is het opdrachtpunt, de exacte plek waar je de opdracht uitvoert.</li>
+              <li>Je eigen locatie is ook zichtbaar op de kaart als blauw/gekleurd bolletje.</li>
+              <li>Ga fysiek naar het opdrachtpunt toe. Pas als je dichtbij genoeg bent, wordt de opdrachttekst zichtbaar.</li>
             </ul>
           </article>
 
           <article className="uitleg-card uitleg-step-card step-3">
             <h3>Stap 3: Inzenden en beoordeling</h3>
             <ul>
-              <li>Lever minimaal tekst, foto of video in.</li>
-              <li>Een admin keurt de inzending goed of af.</li>
+              <li>Selecteer het gebied op de kaart en voer de opdracht uit.</li>
+              <li>Dien minimaal een foto of video in als bewijs.</li>
+              <li>Een admin keurt de inzending goed of af — je ontvangt een melding zodra dit is gedaan.</li>
               <li>Alleen goedgekeurde inzendingen tellen mee.</li>
+              <li>Na een inzending geldt 15 minuten cooldown: je kunt in die tijd niet opnieuw indienen voor hetzelfde gebied.</li>
             </ul>
           </article>
 
@@ -84,7 +95,7 @@ const Speluitleg: React.FC = () => {
             <h3>Stap 5: Einde spel</h3>
             <ul>
               <li>Op de eindtijd stopt het scoren automatisch.</li>
-              <li>Bekijk het scorebord voor de eindranglijst.</li>
+              <li>Je wordt automatisch doorgestuurd naar de eindranglijst.</li>
               <li>Meeste punten wint.</li>
             </ul>
           </article>
@@ -92,25 +103,51 @@ const Speluitleg: React.FC = () => {
       </section>
 
       <section className="uitleg-section">
-        <h2>4) Puntensysteem met voorbeeld</h2>
+        <h2>4) Opdrachtmodi</h2>
+        <div className="uitleg-rules">
+          <div>
+            <h4>🏆 Laatst goedgekeurd wint</h4>
+            <p>
+              Het team waarvan de inzending als laatste is goedgekeurd, bezit het gebied.
+              Teams kunnen elkaar overbieden door terug te gaan en opnieuw in te dienen.
+            </p>
+          </div>
+          <div>
+            <h4>📊 Hoogste score wint</h4>
+            <p>
+              Elk team levert een numerieke score in (bijv. aantal glazen, aantal punten).
+              Het team met de hoogste goedgekeurde score bezit het gebied.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="uitleg-section">
+        <h2>5) Puntensysteem met voorbeeld</h2>
         <p>
-          Voorbeeld: je verovert gebied A. Je krijgt direct capture-punten.
-          Houd je het gebied daarna 8 minuten vast, dan krijg je daarbovenop 8 minuten aan hold-punten.
-          Wordt het gebied overgenomen, dan stoppen je hold-punten voor dat gebied direct.
+          Voorbeeld: Team Rood verovert gebied A om 10:00 → directe capture-punten bijgeschreven.
+          Elke minuut eigenaarschap levert extra hold-punten op.
+          Om 10:10 neemt Team Blauw gebied A over: Rood's hold-punten voor dit gebied stoppen direct;
+          Blauw ontvangt nu de capture-punten en begint zelf hold-punten op te bouwen.
+          Heeft Rood ook gebied B veroverd, dan lopen die hold-punten gewoon door — elk gebied telt afzonderlijk.
         </p>
         <img src={uitlegVoorbeeld} alt="Voorbeeld van opdracht tot scorebord" className="uitleg-image" />
       </section>
 
       <section className="uitleg-section">
-        <h2>5) Extra regels</h2>
+        <h2>6) Extra regels</h2>
         <div className="uitleg-rules">
           <div>
             <h4>Wat doet een tikker?</h4>
-            <p>Een tikker jaagt op andere teams en probeert ze te tikken.</p>
+            <p>Een tikker jaagt op andere teams en probeert ze fysiek aan te tikken. De tikker ziet de live locaties van alle andere teams op de kaart.</p>
+          </div>
+          <div>
+            <h4>Hoe werkt tikken in de app?</h4>
+            <p>Tik het team aan en druk daarna in de app op "Ik heb een team getikt!" Selecteer het getikte team. Dat team ontvangt een melding en moet bevestigen of ontkennen — pas na bevestiging wisselt de tikker-rol.</p>
           </div>
           <div>
             <h4>Na een tik</h4>
-            <p>Het getikte team wordt de nieuwe tikker. De oude tikker wordt weer een normaal team.</p>
+            <p>Het getikte team wordt de nieuwe tikker. De oude tikker wordt weer een normaal team en kan opnieuw opdrachten indienen.</p>
           </div>
           <div>
             <h4>Direct terugtikken mag niet</h4>

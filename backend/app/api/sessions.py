@@ -25,8 +25,6 @@ class CreateSessionRequest(BaseModel):
     duration_minutes: int
     proximity_enabled: bool = False
     proximity_radius: int = Field(default=150, ge=1)
-    default_capture_points: float = Field(default=60.0, ge=0)
-    default_hold_points_per_minute: float = Field(default=1.0, ge=0)
 
 
 class TeamInfo(BaseModel):
@@ -65,37 +63,6 @@ class CityInfo(BaseModel):
     area_count: int
     proximity_enabled: bool
     proximity_radius: int
-    default_capture_points: float
-    default_hold_points_per_minute: float
-
-
-class AreaPointsConfig(BaseModel):
-    area_id: int
-    name: str
-    capture_points: float | None
-    hold_points_per_minute: float | None
-    effective_capture_points: float
-    effective_hold_points_per_minute: float
-
-
-class CityPointsConfigResponse(BaseModel):
-    city_id: int
-    city_name: str
-    default_capture_points: float
-    default_hold_points_per_minute: float
-    areas: List[AreaPointsConfig]
-
-
-class AreaPointsConfigUpdate(BaseModel):
-    area_id: int
-    capture_points: float | None = Field(default=None, ge=0)
-    hold_points_per_minute: float | None = Field(default=None, ge=0)
-
-
-class UpdateCityPointsConfigRequest(BaseModel):
-    default_capture_points: float = Field(..., ge=0)
-    default_hold_points_per_minute: float = Field(..., ge=0)
-    areas: List[AreaPointsConfigUpdate] = Field(default_factory=list)
 
 
 class JoinRequest(BaseModel):
@@ -129,37 +96,13 @@ def generate_join_code(length: int = 6) -> str:
     return ''.join(secrets.choice(chars) for _ in range(length))
 
 
-def _build_city_points_config(city: City, areas: List[Area]) -> CityPointsConfigResponse:
-    return CityPointsConfigResponse(
-        city_id=city.id,
-        city_name=city.name,
-        default_capture_points=float(city.default_capture_points),
-        default_hold_points_per_minute=float(city.default_hold_points_per_minute),
-        areas=[
-            AreaPointsConfig(
-                area_id=area.id,
-                name=area.name,
-                capture_points=float(area.capture_points) if area.capture_points is not None else None,
-                hold_points_per_minute=float(area.hold_points_per_minute) if area.hold_points_per_minute is not None else None,
-                effective_capture_points=float(area.capture_points if area.capture_points is not None else city.default_capture_points),
-                effective_hold_points_per_minute=float(
-                    area.hold_points_per_minute
-                    if area.hold_points_per_minute is not None
-                    else city.default_hold_points_per_minute
-                ),
-            )
-            for area in sorted(areas, key=lambda a: a.name.lower())
-        ],
-    )
-
-
 @router.get("/cities", response_model=List[CityInfo])
 def list_cities(
     db: Session = Depends(get_db)
 ):
     """Get all available cities for game creation."""
     cities = db.query(City).all()
-    
+
     result = []
     for city in cities:
         area_count = db.query(Area).filter(Area.city_id == city.id).count()
@@ -170,60 +113,9 @@ def list_cities(
             area_count=area_count,
             proximity_enabled=city.proximity_enabled,
             proximity_radius=city.proximity_radius,
-            default_capture_points=float(city.default_capture_points),
-            default_hold_points_per_minute=float(city.default_hold_points_per_minute),
         ))
-    
+
     return result
-
-
-@router.get("/cities/{city_id}/points-config", response_model=CityPointsConfigResponse)
-def get_city_points_config(
-    city_id: int,
-    db: Session = Depends(get_db),
-    admin: Team = Depends(get_current_admin),
-):
-    """Get point settings for a city and its areas."""
-    city = db.query(City).filter(City.id == city_id).first()
-    if not city:
-        raise HTTPException(status_code=404, detail="City not found")
-
-    areas = db.query(Area).filter(Area.city_id == city.id).all()
-    return _build_city_points_config(city, areas)
-
-
-@router.put("/cities/{city_id}/points-config", response_model=CityPointsConfigResponse)
-def update_city_points_config(
-    city_id: int,
-    data: UpdateCityPointsConfigRequest,
-    db: Session = Depends(get_db),
-    admin: Team = Depends(get_current_admin),
-):
-    """Update point settings for a city and optional area overrides."""
-    city = db.query(City).filter(City.id == city_id).first()
-    if not city:
-        raise HTTPException(status_code=404, detail="City not found")
-
-    city.default_capture_points = data.default_capture_points
-    city.default_hold_points_per_minute = data.default_hold_points_per_minute
-
-    areas = db.query(Area).filter(Area.city_id == city.id).all()
-    areas_by_id = {area.id: area for area in areas}
-
-    for area_update in data.areas:
-        area = areas_by_id.get(area_update.area_id)
-        if not area:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Area {area_update.area_id} does not belong to city {city.name}"
-            )
-        area.capture_points = area_update.capture_points
-        area.hold_points_per_minute = area_update.hold_points_per_minute
-
-    db.commit()
-    db.refresh(city)
-    areas = db.query(Area).filter(Area.city_id == city.id).all()
-    return _build_city_points_config(city, areas)
 
 
 @router.post("", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
@@ -246,8 +138,6 @@ def create_session(
     # Apply per-game settings to the city
     city.proximity_enabled = data.proximity_enabled
     city.proximity_radius = data.proximity_radius
-    city.default_capture_points = data.default_capture_points
-    city.default_hold_points_per_minute = data.default_hold_points_per_minute
     db.commit()
 
     # Generate unique join code
@@ -444,13 +334,10 @@ def start_session(
                 username = f"{base_username}_{suffix}"
                 suffix += 1
 
-            alphabet = string.ascii_letters + string.digits
-            generated_password = ''.join(secrets.choice(alphabet) for _ in range(12))
-
             admin_account = Team(
                 game_session_id=session.id,
                 name=username,
-                password_hash=get_password_hash(generated_password),
+                password_hash=team_obj.password_hash,
                 color=team_obj.color,
                 is_admin=True
             )
@@ -461,7 +348,7 @@ def start_session(
                 team_id=team_obj.id,
                 team_name=team_obj.name,
                 admin_username=username,
-                admin_password=generated_password
+                admin_password="(zelfde als jullie teamwachtwoord)"
             ))
     
     # Start the session

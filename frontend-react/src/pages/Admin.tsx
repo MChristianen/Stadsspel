@@ -4,11 +4,9 @@ import { apiClient } from '../services/api';
 import { useToast } from '../components/Toast';
 import type {
   City,
-  CityPointsConfig,
   CreatedAdminAccount,
   SessionResponse,
   SessionTeam,
-  UpdateCityPointsConfigRequest,
 } from '../types/api';
 
 const Admin: React.FC = () => {
@@ -19,14 +17,10 @@ const Admin: React.FC = () => {
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [proximityEnabled, setProximityEnabled] = useState(false);
   const [proximityRadius, setProximityRadius] = useState(150);
-  const [capturePoints, setCapturePoints] = useState(60);
-  const [holdPointsPerMin, setHoldPointsPerMin] = useState(1.0);
   const [currentSession, setCurrentSession] = useState<SessionResponse | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(true);
   const [selectedAdditionalAdmins, setSelectedAdditionalAdmins] = useState<number[]>([]);
   const [createdAdminAccounts, setCreatedAdminAccounts] = useState<CreatedAdminAccount[]>([]);
-  const [configCityId, setConfigCityId] = useState<number | null>(null);
-  const [pointsConfigDraft, setPointsConfigDraft] = useState<CityPointsConfig | null>(null);
   const [extendMinutes, setExtendMinutes] = useState(10);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [rejectFeedback, setRejectFeedback] = useState('');
@@ -70,39 +64,12 @@ const Admin: React.FC = () => {
   });
 
   useEffect(() => {
-    if (currentSession?.city_id) {
-      setConfigCityId(currentSession.city_id);
-      return;
-    }
-    if (!configCityId && cities.length > 0) {
-      setConfigCityId(cities[0].id);
-    }
-  }, [cities, currentSession, configCityId]);
-
-  useEffect(() => {
     if (!selectedCityId) return;
     const city = cities.find((c) => c.id === selectedCityId);
     if (!city) return;
     setProximityEnabled(city.proximity_enabled);
     setProximityRadius(city.proximity_radius);
-    setCapturePoints(city.default_capture_points);
-    setHoldPointsPerMin(city.default_hold_points_per_minute);
   }, [selectedCityId, cities]);
-
-  const { data: pointsConfig, isLoading: pointsConfigLoading } = useQuery<CityPointsConfig>({
-    queryKey: ['cityPointsConfig', configCityId],
-    queryFn: () => apiClient.getCityPointsConfig(configCityId!),
-    enabled: !!configCityId,
-  });
-
-  useEffect(() => {
-    if (pointsConfig) {
-      setPointsConfigDraft({
-        ...pointsConfig,
-        areas: pointsConfig.areas.map((area) => ({ ...area })),
-      });
-    }
-  }, [pointsConfig]);
 
   const { data: sessionTeams = [] } = useQuery<SessionTeam[]>({
     queryKey: ['sessionTeams', currentSession?.id],
@@ -143,7 +110,7 @@ const Admin: React.FC = () => {
   });
 
   const createSessionMutation = useMutation({
-    mutationFn: (data: { city_id: number; duration_minutes: number; proximity_enabled: boolean; proximity_radius: number; default_capture_points: number; default_hold_points_per_minute: number }) => apiClient.createSession(data),
+    mutationFn: (data: { city_id: number; duration_minutes: number; proximity_enabled: boolean; proximity_radius: number }) => apiClient.createSession(data),
     onSuccess: (session) => {
       setCurrentSession(session);
       setShowCreateForm(false);
@@ -270,26 +237,6 @@ const Admin: React.FC = () => {
     },
   });
 
-  const updatePointsConfigMutation = useMutation({
-    mutationFn: (payload: UpdateCityPointsConfigRequest) => {
-      if (!configCityId) {
-        throw new Error('Geen stad geselecteerd');
-      }
-      return apiClient.updateCityPointsConfig(configCityId, payload);
-    },
-    onSuccess: (updatedConfig) => {
-      setPointsConfigDraft({
-        ...updatedConfig,
-        areas: updatedConfig.areas.map((area) => ({ ...area })),
-      });
-      queryClient.invalidateQueries({ queryKey: ['cityPointsConfig', configCityId] });
-      alert('Punteninstellingen opgeslagen');
-    },
-    onError: () => {
-      alert('Opslaan mislukt');
-    },
-  });
-
   const handleCreateSession = () => {
     if (!selectedCityId) {
       alert('Selecteer een stad');
@@ -300,8 +247,6 @@ const Admin: React.FC = () => {
       duration_minutes: durationMinutes,
       proximity_enabled: proximityEnabled,
       proximity_radius: proximityRadius,
-      default_capture_points: capturePoints,
-      default_hold_points_per_minute: holdPointsPerMin,
     });
   };
 
@@ -351,73 +296,6 @@ const Admin: React.FC = () => {
   const copyAdminCredentials = async (account: CreatedAdminAccount) => {
     const text = `Team: ${account.team_name}\nGebruikersnaam: ${account.admin_username}\nWachtwoord: ${account.admin_password}`;
     await copyText(text, `Inloggegevens gekopieerd voor ${account.team_name}`);
-  };
-
-  const handleDefaultPointsChange = (
-    key: 'default_capture_points' | 'default_hold_points_per_minute',
-    value: string
-  ) => {
-    const numeric = Number(value);
-    if (!pointsConfigDraft || Number.isNaN(numeric) || numeric < 0) return;
-    setPointsConfigDraft({ ...pointsConfigDraft, [key]: numeric });
-  };
-
-  const handleAreaPointsChange = (
-    areaId: number,
-    key: 'capture_points' | 'hold_points_per_minute',
-    value: string
-  ) => {
-    if (!pointsConfigDraft) return;
-    const parsedValue = value.trim() === '' ? null : Number(value);
-    if (parsedValue !== null && (Number.isNaN(parsedValue) || parsedValue < 0)) return;
-
-    setPointsConfigDraft({
-      ...pointsConfigDraft,
-      areas: pointsConfigDraft.areas.map((area) =>
-        area.area_id === areaId
-          ? {
-              ...area,
-              [key]: parsedValue,
-            }
-          : area
-      ),
-    });
-  };
-
-  const toggleAreaDefaults = (areaId: number, enabled: boolean) => {
-    if (!pointsConfigDraft) return;
-    setPointsConfigDraft({
-      ...pointsConfigDraft,
-      areas: pointsConfigDraft.areas.map((area) =>
-        area.area_id === areaId
-          ? {
-              ...area,
-              capture_points: enabled ? null : area.capture_points ?? pointsConfigDraft.default_capture_points,
-              hold_points_per_minute: enabled ? null : area.hold_points_per_minute ?? pointsConfigDraft.default_hold_points_per_minute,
-            }
-          : area
-      ),
-    });
-  };
-
-  const handleSavePointsConfig = () => {
-    if (!pointsConfigDraft) return;
-    if (pointsConfigDraft.default_capture_points < 0 || pointsConfigDraft.default_hold_points_per_minute < 0) {
-      alert('Punten moeten 0 of hoger zijn');
-      return;
-    }
-
-    const payload: UpdateCityPointsConfigRequest = {
-      default_capture_points: pointsConfigDraft.default_capture_points,
-      default_hold_points_per_minute: pointsConfigDraft.default_hold_points_per_minute,
-      areas: pointsConfigDraft.areas.map((area) => ({
-        area_id: area.area_id,
-        capture_points: area.capture_points,
-        hold_points_per_minute: area.hold_points_per_minute,
-      })),
-    };
-
-    updatePointsConfigMutation.mutate(payload);
   };
 
   return (
@@ -485,34 +363,6 @@ const Admin: React.FC = () => {
                 <span style={{ color: '#555' }}>meter radius</span>
               </div>
             )}
-          </div>
-
-          {/* 4. Punten */}
-          <div style={{ marginBottom: '28px' }}>
-            <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>🏆 Punten</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', color: '#555', marginBottom: '4px' }}>Capture-punten per gebied</label>
-                <input
-                  type="number"
-                  value={capturePoints}
-                  onChange={(e) => setCapturePoints(Number(e.target.value))}
-                  min="0"
-                  style={{ width: '100%', padding: '8px', fontSize: '15px', borderRadius: '4px', border: '1px solid #ddd' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', color: '#555', marginBottom: '4px' }}>Hold-punten per minuut</label>
-                <input
-                  type="number"
-                  value={holdPointsPerMin}
-                  onChange={(e) => setHoldPointsPerMin(Number(e.target.value))}
-                  min="0"
-                  step="0.1"
-                  style={{ width: '100%', padding: '8px', fontSize: '15px', borderRadius: '4px', border: '1px solid #ddd' }}
-                />
-              </div>
-            </div>
           </div>
 
           <button
@@ -789,111 +639,7 @@ const Admin: React.FC = () => {
             )}
           </div>
 
-          <div className="admin-section">
-            <h2>Punteninstellingen</h2>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>Stad</label>
-              <select
-                value={configCityId || ''}
-                onChange={(e) => setConfigCityId(Number(e.target.value))}
-                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd' }}
-              >
-                {cities.map((city) => (
-                  <option key={`cfg-${city.id}`} value={city.id}>
-                    {city.name}
-                  </option>
-                ))}
-              </select>
-            </div>
 
-            {pointsConfigLoading || !pointsConfigDraft ? (
-              <p>Laden...</p>
-            ) : (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>Capture points (stad)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={pointsConfigDraft.default_capture_points}
-                      onChange={(e) => handleDefaultPointsChange('default_capture_points', e.target.value)}
-                      style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>Hold points/min (stad)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={pointsConfigDraft.default_hold_points_per_minute}
-                      onChange={(e) => handleDefaultPointsChange('default_hold_points_per_minute', e.target.value)}
-                      style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ddd' }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ border: '1px solid #e5e5e5', borderRadius: '8px', overflow: 'hidden' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', background: '#f7f7f7', padding: '10px', fontWeight: 'bold', gap: '10px' }}>
-                    <div>Gebied</div>
-                    <div>Capture</div>
-                    <div>Hold/min</div>
-                    <div>Override</div>
-                  </div>
-                  {pointsConfigDraft.areas.map((area) => {
-                    const useDefaults = area.capture_points === null && area.hold_points_per_minute === null;
-                    return (
-                      <div
-                        key={`points-${area.area_id}`}
-                        style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '10px', gap: '10px', borderTop: '1px solid #f0f0f0', alignItems: 'center' }}
-                      >
-                        <div>{area.name}</div>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          disabled={useDefaults}
-                          value={area.capture_points ?? ''}
-                          placeholder={`${area.effective_capture_points}`}
-                          onChange={(e) => handleAreaPointsChange(area.area_id, 'capture_points', e.target.value)}
-                          style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                        />
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          disabled={useDefaults}
-                          value={area.hold_points_per_minute ?? ''}
-                          placeholder={`${area.effective_hold_points_per_minute}`}
-                          onChange={(e) => handleAreaPointsChange(area.area_id, 'hold_points_per_minute', e.target.value)}
-                          style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                        />
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <input
-                            type="checkbox"
-                            checked={useDefaults}
-                            onChange={(e) => toggleAreaDefaults(area.area_id, e.target.checked)}
-                          />
-                          <span>Stad</span>
-                        </label>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <button
-                  onClick={handleSavePointsConfig}
-                  className="btn-primary"
-                  disabled={updatePointsConfigMutation.isPending}
-                  style={{ marginTop: '12px' }}
-                >
-                  {updatePointsConfigMutation.isPending ? 'Opslaan...' : 'Sla punteninstellingen op'}
-                </button>
-              </>
-            )}
-          </div>
 
           {createdAdminAccounts.length > 0 && (
             <div className="admin-section" style={{ background: '#fff8e1', border: '2px solid #ffb300' }}>

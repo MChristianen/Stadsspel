@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '../services/api';
@@ -91,8 +91,47 @@ const PointsChart: React.FC<{ data: PublicResultsResponse }> = ({ data }) => {
   );
 };
 
+const Lightbox: React.FC<{ url: string; type: string; onClose: () => void }> = ({ url, type, onClose }) => {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.92)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      <button
+        onClick={onClose}
+        style={{
+          position: 'absolute', top: 16, right: 20,
+          background: 'none', border: 'none', color: 'white',
+          fontSize: 32, cursor: 'pointer', lineHeight: 1,
+        }}
+        aria-label="Sluiten"
+      >
+        ×
+      </button>
+      <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '92vw', maxHeight: '88vh' }}>
+        {type === 'PHOTO' ? (
+          <img src={url} alt="media" style={{ maxWidth: '92vw', maxHeight: '88vh', borderRadius: 8, objectFit: 'contain' }} />
+        ) : (
+          <video src={url} controls autoPlay style={{ maxWidth: '92vw', maxHeight: '88vh', borderRadius: 8 }} />
+        )}
+      </div>
+    </div>
+  );
+};
+
 const PublicResults: React.FC = () => {
   const { joinCode } = useParams<{ joinCode: string }>();
+  const [lightbox, setLightbox] = useState<{ url: string; type: string } | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['publicResults', joinCode],
@@ -123,6 +162,7 @@ const PublicResults: React.FC = () => {
 
   return (
     <div className="leaderboard-container">
+      {lightbox && <Lightbox url={lightbox.url} type={lightbox.type} onClose={() => setLightbox(null)} />}
       <h1>Uitslag - {data.city_name}</h1>
       <p>
         Sessie: <strong>{data.join_code}</strong> | Teams: <strong>{data.team_count}</strong> | Gebieden:{' '}
@@ -163,13 +203,22 @@ const PublicResults: React.FC = () => {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {sub.media.map((m) => (
                         m.media_type === 'PHOTO' ? (
-                          <a key={m.id} href={m.url} target="_blank" rel="noopener noreferrer">
-                            <img src={m.url} alt="media" loading="lazy" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #eee' }} />
-                          </a>
+                          <img
+                            key={m.id}
+                            src={m.url}
+                            alt="media"
+                            loading="lazy"
+                            onClick={() => setLightbox({ url: m.url, type: m.media_type })}
+                            style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, border: '1px solid #eee', cursor: 'pointer' }}
+                          />
                         ) : (
-                          <a key={m.id} href={m.url} target="_blank" rel="noopener noreferrer">
-                            <video src={m.url} style={{ width: 80, height: 80, borderRadius: 4, border: '1px solid #eee' }} controls preload="none" />
-                          </a>
+                          <video
+                            key={m.id}
+                            src={m.url}
+                            onClick={() => setLightbox({ url: m.url, type: m.media_type })}
+                            style={{ width: 80, height: 80, borderRadius: 4, border: '1px solid #eee', cursor: 'pointer' }}
+                            preload="none"
+                          />
                         )
                       ))}
                     </div>

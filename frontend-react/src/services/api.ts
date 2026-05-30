@@ -19,8 +19,6 @@ import type {
   SessionResponse,
   SessionTeam,
   StartSessionResponse,
-  CityPointsConfig,
-  UpdateCityPointsConfigRequest,
   PublicResultsResponse,
   PublicMediaGalleryArea,
   TikkerStatus,
@@ -300,16 +298,6 @@ class ApiClient {
     const response = await this.client.get(`/results/${joinCode}/media`, {
       headers: { skipAuth: true },
     } as AxiosRequestConfig);
-    return response.data;
-  }
-
-  async getCityPointsConfig(cityId: number): Promise<CityPointsConfig> {
-    const response = await this.client.get(`/sessions/cities/${cityId}/points-config`);
-    return response.data;
-  }
-
-  async updateCityPointsConfig(cityId: number, data: UpdateCityPointsConfigRequest): Promise<CityPointsConfig> {
-    const response = await this.client.put(`/sessions/cities/${cityId}/points-config`, data);
     return response.data;
   }
 

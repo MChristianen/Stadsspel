@@ -180,35 +180,6 @@ export interface City {
   area_count: number;
   proximity_enabled: boolean;
   proximity_radius: number;
-  default_capture_points: number;
-  default_hold_points_per_minute: number;
-}
-
-export interface CityPointsConfigArea {
-  area_id: number;
-  name: string;
-  capture_points: number | null;
-  hold_points_per_minute: number | null;
-  effective_capture_points: number;
-  effective_hold_points_per_minute: number;
-}
-
-export interface CityPointsConfig {
-  city_id: number;
-  city_name: string;
-  default_capture_points: number;
-  default_hold_points_per_minute: number;
-  areas: CityPointsConfigArea[];
-}
-
-export interface UpdateCityPointsConfigRequest {
-  default_capture_points: number;
-  default_hold_points_per_minute: number;
-  areas: Array<{
-    area_id: number;
-    capture_points: number | null;
-    hold_points_per_minute: number | null;
-  }>;
 }
 
 export interface CreateSessionRequest {
@@ -216,8 +187,6 @@ export interface CreateSessionRequest {
   duration_minutes: number;
   proximity_enabled: boolean;
   proximity_radius: number;
-  default_capture_points: number;
-  default_hold_points_per_minute: number;
 }
 
 export interface SessionResponse {

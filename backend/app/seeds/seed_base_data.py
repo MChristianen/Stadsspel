@@ -211,6 +211,8 @@ CITY_DATA = [
         "description": "Stad in Noord-Brabant met 5 spelgebieden",
         "default_capture_points": 60.0,
         "default_hold_points_per_minute": 0.6,
+        "proximity_enabled": True,
+        "proximity_radius": 150,
         "areas": [
             {
                 "name": "Centrum Roosendaal",
@@ -220,6 +222,7 @@ CITY_DATA = [
                     (4.471, 51.535), (4.466, 51.538), (4.458, 51.537), (4.453, 51.533),
                     (4.454, 51.526)
                 ],
+                "challenge_point": (4.4585, 51.5403),
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
                     "title": "Maak een stationsselfie",
@@ -263,10 +266,11 @@ CITY_DATA = [
                     (4.447, 51.539), (4.442, 51.545), (4.435, 51.546), (4.429, 51.542),
                     (4.427, 51.535), (4.430, 51.527)
                 ],
+                "challenge_point": (4.4537, 51.5219),
                 "challenge": {
                     "mode": ChallengeMode.HIGHEST_SCORE_WINS,
-                    "title": "Scoor met sport",
-                    "description": "Voer samen 1 minuut sportoefeningen uit; score = totaal aantal herhalingen",
+                    "title": "Scoor met sport bij de Vondelschool",
+                    "description": "Voer samen 1 minuut sportoefeningen uit bij de Vondelschool (Vondellaan 44); score = totaal aantal herhalingen",
                     "score_description": "Hoeveel herhalingen hebben jullie samen gedaan in 1 minuut?",
                 },
             },
@@ -278,10 +282,11 @@ CITY_DATA = [
                     (4.474, 51.522), (4.469, 51.524), (4.460, 51.524), (4.451, 51.522),
                     (4.445, 51.518), (4.446, 51.512)
                 ],
+                "challenge_point": (4.4579, 51.5255),
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Groene missie",
-                    "description": "Maak een teamfoto met minimaal drie verschillende soorten groen in beeld",
+                    "title": "Groene missie op de Ruusbroeclaan",
+                    "description": "Maak een teamfoto op de Ruusbroeclaan (nr. 10) met minimaal drie verschillende soorten groen in beeld",
                 },
             },
         ],
@@ -741,8 +746,8 @@ CITY_DATA = [
                 "challenge_point": (4.3440, 50.8497),
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Kunstcriticus in de Sint-Gorikshallen",
-                    "description": "De Sint-Gorikshallen (Halles Saint-Géry) is een schitterende gerestaureerde overdekte markthal uit 1881, gebouwd op de plek waar Brussel is ontstaan. https://maps.google.com/?q=Halles+Saint-Gery+Brussels Ga naar binnen, zoek een van de kunstwerken of tentoonstellingsstukken en poseer ervoor als een ultra-serieuze kunstcriticus: één hand aan de kin, diep in gedachten verzonken, volledig in karakter. Laat de ander dit vastleggen op foto.",
+                    "title": "Drankje in de Sint-Gorikshallen",
+                    "description": "De Sint-Gorikshallen (Halles Saint-Géry) is een gerestaureerde overdekte markthal uit 1881 — inmiddels een bruisend café- en barplein waar locals en bezoekers samenkomen. https://maps.google.com/?q=Halles+Saint-Gery+Brussels Ga naar binnen, bestel een glas wijn of een fris drankje en maak een foto van jullie team met de drankjes in de hand. Proost!",
                 },
             },
             {
@@ -758,8 +763,8 @@ CITY_DATA = [
                 "challenge_point": (4.3523, 50.8502),
                 "challenge": {
                     "mode": ChallengeMode.LAST_APPROVED_WINS,
-                    "title": "Reliëfpose bij de Beurs",
-                    "description": "De Beurs van Brussel (Bourse de Bruxelles) is een indrukwekkend neoclassicistisch gebouw uit 1873, rijkelijk versierd met reliëffiguren van arbeiders, handelaars en allegorische figuren. https://maps.google.com/?q=Bourse+de+Bruxelles Zoek een van deze figuren op de gevel, imiteer de houding zo exact mogelijk en laat de ander dit vastleggen op foto. Hoe meer jullie lijken op het reliëf, hoe beter!",
+                    "title": "Friet bij de Beurs",
+                    "description": "De Beurs van Brussel (Bourse de Bruxelles) is een neoclassicistisch monument uit 1873 — en de omgeving rondom de Beurs is het kloppend hart van de stad, vol met typische Brusselse eetcultuur. https://maps.google.com/?q=Bourse+de+Bruxelles Zoek een frietkot in de buurt, bestel een portie friet en maak een foto van jullie team met de friet. Een echte Belgische klassieker!",
                 },
             },
             {
